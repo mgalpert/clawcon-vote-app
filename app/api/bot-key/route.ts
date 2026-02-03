@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 import crypto from "crypto";
 
+export async function GET() {
+  return NextResponse.json({
+    message: "POST your email to get a bot key",
+    usage: 'curl -X POST https://www.claw-con.com/api/bot-key -H "Content-Type: application/json" -d \'{"email": "you@example.com"}\''
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
