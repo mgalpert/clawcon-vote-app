@@ -281,6 +281,17 @@ details.panel[open] summary {
   color: var(--fg);
 }
 
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge.oss {
+  background: #d4edda;
+  color: #155724;
+}
+
 @media (max-width: 640px) {
   main {
     padding: 32px 16px 48px;

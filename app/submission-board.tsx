@@ -148,7 +148,14 @@ export default function SubmissionBoard() {
     fetchSubmissions();
   };
 
-  const sortedSubmissions = useMemo(() => submissions, [submissions]);
+  const sortedSubmissions = useMemo(() => {
+    return [...submissions].sort((a, b) => {
+      const aHasGithub = a.links?.some((l) => l.includes("github.com")) ? 1 : 0;
+      const bHasGithub = b.links?.some((l) => l.includes("github.com")) ? 1 : 0;
+      if (bHasGithub !== aHasGithub) return bHasGithub - aHasGithub;
+      return b.vote_count - a.vote_count;
+    });
+  }, [submissions]);
   const filteredSubmissions = useMemo(
     () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
     [sortedSubmissions, activeTab]
@@ -221,7 +228,8 @@ export default function SubmissionBoard() {
         </div>
       ) : (
         <div className="panel soft">
-          <strong>🎬 Demo ideas:</strong> Multi-agent workflows, safe tool gating, vector memory, eval harness, skill routers.
+          <strong>🎬 Demo ideas:</strong> Multi-agent workflows, safe tool gating, vector memory, eval harness, skill routers.<br />
+          <span className="muted">Include a GitHub repo or video link. Open source projects get priority! 🌟</span>
         </div>
       )}
 
@@ -261,7 +269,12 @@ export default function SubmissionBoard() {
                 </div>
               ) : null}
               <div className="card-footer">
-                <span className="badge">{submission.vote_count} votes</span>
+                <div className="badges">
+                  <span className="badge">{submission.vote_count} votes</span>
+                  {submission.links?.some((l) => l.includes("github.com")) && (
+                    <span className="badge oss">Open Source</span>
+                  )}
+                </div>
                 <button
                   className="button"
                   onClick={() => handleVote(submission.id)}
@@ -306,9 +319,10 @@ export default function SubmissionBoard() {
             <input
               className="input"
               type="text"
-              placeholder="Demo link, repo, or slides (comma-separated)"
+              placeholder={activeTab === "speaker_demo" ? "GitHub repo or video link (required)" : "GitHub repo or video link (optional)"}
               value={formLinks}
               onChange={(event) => setFormLinks(event.target.value)}
+              required={activeTab === "speaker_demo"}
             />
             <button className="button" type="submit" disabled={submitLoading}>
               {submitLoading ? "Submitting..." : "Submit session"}
