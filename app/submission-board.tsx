@@ -37,7 +37,7 @@ export default function SubmissionBoard() {
   const fetchSubmissions = async () => {
     const { data, error } = await supabase.rpc("get_submissions_with_votes");
     if (error) {
-      setNotice(error.message);
+      setNotice("We’re having trouble loading submissions. Please try again soon.");
       return;
     }
     setSubmissions(data || []);
@@ -199,6 +199,32 @@ export default function SubmissionBoard() {
         </div>
         {notice ? <div className="notice">{notice}</div> : null}
       </header>
+
+      <section className="panel">
+        <h2>How to submit</h2>
+        <ol>
+          <li>Humans: sign in with magic link and submit via the form.</li>
+          <li>
+            Bots: POST JSON to <code>/api/webhook</code> with header
+            <code> x-webhook-secret</code>.
+          </li>
+        </ol>
+        <pre className="code-block">{`POST https://www.claw-con.com/api/webhook
+Content-Type: application/json
+x-webhook-secret: <WEBHOOK_SECRET>
+
+{
+  "title": "Secure Skill Orchestration",
+  "description": "How we keep agent tools safe at scale.",
+  "presenter_name": "Jane Doe",
+  "submission_type": "topic",
+  "submitted_by": "bot_on_behalf",
+  "submitted_for_name": "Jane Doe",
+  "submitted_for_contact": "jane@email",
+  "links": ["https://example.com/demo"]
+}`}</pre>
+        <p className="muted">Contact email is stored privately and never shown publicly.</p>
+      </section>
 
       <div className="tabs">
         <button
