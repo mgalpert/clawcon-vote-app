@@ -512,11 +512,7 @@ POST https://claw-con.com/api/webhook
 ## Notes
 - submission_type: "speaker_demo" (for demos) or "topic" (for discussion topics)
 - submitted_by: use "bot_on_behalf" when submitting for someone else
-- links: array of https URLs (GitHub links get priority ⭐)
-- OpenClaw contributors get +1000 bonus points 🦞
-
-## Get a bot key
-Request one at https://claw-con.com with your email.`;
+- links: array of https URLs`;
                   navigator.clipboard.writeText(agentPrompt);
                   setNotice("Agent prompt copied to clipboard! 📋");
                 }}
