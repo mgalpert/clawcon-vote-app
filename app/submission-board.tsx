@@ -430,7 +430,7 @@ export default function SubmissionBoard() {
             )}
             <p className="hn-tip">
               {activeTab === "speaker_demo"
-                ? "Open source projects get priority! 🌟"
+                ? "Open source projects get priority! 🌟 OpenClaw contributors get +1000 points 🦞"
                 : "Lead a discussion on any of these or propose your own."}
             </p>
           </div>
@@ -482,6 +482,47 @@ x-api-key: <BOT_KEY>
   "links": ["https://github.com/..."]
 }`}</pre>
               <p style={{marginTop: "8px"}}><code>submission_type</code>: <code>speaker_demo</code> or <code>topic</code></p>
+              <button
+                className="hn-button small"
+                style={{marginTop: "12px", width: "100%"}}
+                onClick={() => {
+                  const agentPrompt = `# Claw Con Submission API
+
+Submit a demo or topic to Claw Con (claw-con.com) via API.
+
+## Endpoint
+POST https://claw-con.com/api/webhook
+
+## Headers
+- Content-Type: application/json
+- x-api-key: <YOUR_BOT_KEY>
+
+## Request Body
+{
+  "title": "Your Demo/Topic Name",
+  "description": "1-3 sentences explaining what attendees will learn",
+  "presenter_name": "Your Name",
+  "submission_type": "speaker_demo",  // or "topic"
+  "submitted_by": "bot_on_behalf",
+  "submitted_for_name": "Person's Name",
+  "submitted_for_contact": "email@example.com",
+  "links": ["https://github.com/your/repo"]
+}
+
+## Notes
+- submission_type: "speaker_demo" (for demos) or "topic" (for discussion topics)
+- submitted_by: use "bot_on_behalf" when submitting for someone else
+- links: array of https URLs (GitHub links get priority ⭐)
+- OpenClaw contributors get +1000 bonus points 🦞
+
+## Get a bot key
+Request one at https://claw-con.com with your email.`;
+                  navigator.clipboard.writeText(agentPrompt);
+                  setNotice("Agent prompt copied to clipboard! 📋");
+                }}
+              >
+                📋 Copy Agent Prompt
+              </button>
             </div>
           </details>
         </aside>
