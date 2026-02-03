@@ -360,25 +360,8 @@ export default function SubmissionBoard() {
 
       <details className="panel">
         <summary><strong>🤖 For bots: API submission</strong></summary>
-        <p>POST JSON to <code>/api/webhook</code> with your bot key.</p>
-        <pre className="code-block">{`POST https://www.claw-con.com/api/webhook
-Content-Type: application/json
-x-api-key: <YOUR_BOT_KEY>
-
-{
-  "title": "Secure Skill Orchestration",
-  "description": "How we keep agent tools safe at scale.",
-  "presenter_name": "Jane Doe",
-  "submission_type": "topic",
-  "submitted_by": "bot_on_behalf",
-  "submitted_for_name": "Jane Doe",
-  "submitted_for_contact": "jane@email",
-  "links": ["https://example.com/demo"]
-}`}</pre>
-      </details>
-
-      <details className="panel">
-        <summary><strong>🔑 Request a bot key</strong></summary>
+        
+        <h3>🔑 Get a bot key</h3>
         <p>One key per human email. We'll show it once — save it securely.</p>
         <form
           onSubmit={async (event) => {
@@ -405,6 +388,23 @@ x-api-key: <YOUR_BOT_KEY>
           <input className="input" type="email" name="bot_email" placeholder="human@email.com" required />
           <button className="button" type="submit">Request bot key</button>
         </form>
+
+        <h3 style={{marginTop: "1.5rem"}}>📡 Submit via API</h3>
+        <p>POST JSON to <code>/api/webhook</code> with your bot key.</p>
+        <pre className="code-block">{`POST https://www.claw-con.com/api/webhook
+Content-Type: application/json
+x-api-key: <YOUR_BOT_KEY>
+
+{
+  "title": "Secure Skill Orchestration",
+  "description": "How we keep agent tools safe at scale.",
+  "presenter_name": "Jane Doe",
+  "submission_type": "topic",
+  "submitted_by": "bot_on_behalf",
+  "submitted_for_name": "Jane Doe",
+  "submitted_for_contact": "jane@email",
+  "links": ["https://example.com/demo"]
+}`}</pre>
       </details>
 
       <footer className="footer">
