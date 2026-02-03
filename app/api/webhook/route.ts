@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
 
+const ALLOWED_DOMAINS = [
+  "github.com",
+  "gitlab.com",
+  "bitbucket.org",
+  "youtube.com",
+  "youtu.be",
+  "vimeo.com",
+  "loom.com",
+  "drive.google.com",
+  "docs.google.com",
+  "notion.so",
+  "figma.com",
+  "twitter.com",
+  "x.com",
+  "linkedin.com",
+  "huggingface.co",
+  "arxiv.org",
+  "medium.com",
+  "dev.to",
+  "substack.com"
+];
+
+function sanitizeLink(link: string): string | null {
+  try {
+    const url = new URL(link);
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.replace(/^www\./, "");
+    if (!ALLOWED_DOMAINS.some((d) => host === d || host.endsWith("." + d))) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
@@ -15,11 +51,8 @@ export async function POST(request: NextRequest) {
       ? payload.links.filter((link: unknown) => typeof link === "string")
       : [];
     const links = rawLinks
-      .map((link: string) => link.trim())
-      .filter(
-        (link: string) =>
-          link.startsWith("http://") || link.startsWith("https://")
-      );
+      .map((link: string) => sanitizeLink(link.trim()))
+      .filter((link): link is string => link !== null);
 
     const submissionType =
       payload.submission_type === "topic" ? "topic" : "speaker_demo";

@@ -4,6 +4,42 @@ import { useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 
+const ALLOWED_DOMAINS = [
+  "github.com",
+  "gitlab.com",
+  "bitbucket.org",
+  "youtube.com",
+  "youtu.be",
+  "vimeo.com",
+  "loom.com",
+  "drive.google.com",
+  "docs.google.com",
+  "notion.so",
+  "figma.com",
+  "twitter.com",
+  "x.com",
+  "linkedin.com",
+  "huggingface.co",
+  "arxiv.org",
+  "medium.com",
+  "dev.to",
+  "substack.com"
+];
+
+function sanitizeLink(link: string): string | null {
+  try {
+    const url = new URL(link);
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.replace(/^www\./, "");
+    if (!ALLOWED_DOMAINS.some((d) => host === d || host.endsWith("." + d))) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 interface Submission {
   id: string;
   title: string;
@@ -118,10 +154,17 @@ export default function SubmissionBoard() {
     }
     setNotice(null);
     setSubmitLoading(true);
-    const links = formLinks
+    const rawLinks = formLinks
       .split(",")
       .map((link) => link.trim())
       .filter(Boolean);
+    const links = rawLinks.map((l) => sanitizeLink(l)).filter((l): l is string => l !== null);
+
+    if (rawLinks.length > 0 && links.length === 0) {
+      setNotice("Links must be https:// from allowed sites (GitHub, YouTube, Vimeo, Loom, etc.)");
+      setSubmitLoading(false);
+      return;
+    }
 
     const presenterValue = formPresenter || (activeTab === "topic" ? "Community" : "");
 
