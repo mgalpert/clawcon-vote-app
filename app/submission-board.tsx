@@ -22,6 +22,13 @@ export default function SubmissionBoard() {
   const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">("speaker_demo");
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [displayCount, setDisplayCount] = useState(30);
+  const [botKeyInfo, setBotKeyInfo] = useState<{
+    last4: string;
+    created_at: string;
+    updated_at: string;
+  } | null>(null);
+  const [botKeyLoading, setBotKeyLoading] = useState(false);
+  const [botKeyReveal, setBotKeyReveal] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const userEmail = session?.user?.email ?? null;
@@ -34,6 +41,26 @@ export default function SubmissionBoard() {
     }
     setSubmissions(data || []);
   };
+
+  const fetchBotKeyInfo = useCallback(async () => {
+    if (!session?.user?.id) {
+      setBotKeyInfo(null);
+      setBotKeyReveal(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("bot_keys_public")
+      .select("last4,created_at,updated_at")
+      .maybeSingle();
+
+    if (error) {
+      setNotice("Unable to load bot key info. Please try again.");
+      return;
+    }
+
+    setBotKeyInfo(data ?? null);
+  }, [session]);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,6 +84,10 @@ export default function SubmissionBoard() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    fetchBotKeyInfo();
+  }, [fetchBotKeyInfo]);
 
   // Infinite scroll observer
   const loadMore = useCallback(() => {
@@ -190,6 +221,55 @@ export default function SubmissionBoard() {
   );
 
   const hasMore = displayCount < filteredSubmissions.length;
+
+  const handleBotKeyReveal = async () => {
+    if (!session) {
+      setShowSignInModal(true);
+      return;
+    }
+    setNotice(null);
+    setBotKeyLoading(true);
+    const response = await fetch("/api/bot-key/reveal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+    const data = await response.json();
+    setBotKeyLoading(false);
+    if (!response.ok) {
+      setNotice(data.error || "Unable to reveal bot key.");
+      return;
+    }
+    setBotKeyReveal(data.api_key);
+    setNotice("Bot key revealed. Copy it now.");
+  };
+
+  const handleBotKeyRegenerate = async () => {
+    if (!session) {
+      setShowSignInModal(true);
+      return;
+    }
+    setNotice(null);
+    setBotKeyLoading(true);
+    const response = await fetch("/api/bot-key/regenerate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      }
+    });
+    const data = await response.json();
+    setBotKeyLoading(false);
+    if (!response.ok) {
+      setNotice(data.error || "Unable to regenerate bot key.");
+      return;
+    }
+    setBotKeyReveal(data.api_key);
+    setNotice(data.warning || "Bot key regenerated. Copy it now.");
+    fetchBotKeyInfo();
+  };
 
   return (
     <>
@@ -438,32 +518,47 @@ export default function SubmissionBoard() {
           <details className="hn-sidebar-box hn-api-box">
             <summary><strong>🤖 Bot API</strong></summary>
             <div className="hn-api-content">
-              <h4>🔑 Get a bot key</h4>
-              <p>One key per human email. We'll show it once — save it securely.</p>
-              <form
-                onSubmit={async (event) => {
-                  event.preventDefault();
-                  const form = new FormData(event.currentTarget);
-                  const emailValue = String(form.get("bot_email") || "").trim();
-                  if (!emailValue) return;
-                  setNotice(null);
-                  const response = await fetch("/api/bot-key", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: emailValue })
-                  });
-                  const data = await response.json();
-                  if (!response.ok) {
-                    setNotice(data.error || "Unable to issue bot key.");
-                    return;
-                  }
-                  setNotice(`Bot key: ${data.api_key}`);
-                }}
-                className="hn-form"
-              >
-                <input className="input" type="email" name="bot_email" placeholder="your@email.com" required />
-                <button className="hn-button small" type="submit">Get key</button>
-              </form>
+              <h4>🔑 Bot key</h4>
+              <p>Keys are tied to your account and stored encrypted. Reveal or regenerate when needed.</p>
+              {!session ? (
+                <div className="hn-signin-prompt">
+                  <p>Sign in to manage your bot key.</p>
+                  <button className="hn-button small" onClick={() => setShowSignInModal(true)}>
+                    Sign in
+                  </button>
+                </div>
+              ) : (
+                <div className="hn-form">
+                  {botKeyInfo ? (
+                    <p>Current key ends in <strong>{botKeyInfo.last4}</strong>.</p>
+                  ) : (
+                    <p>No bot key yet.</p>
+                  )}
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button
+                      className="hn-button small"
+                      type="button"
+                      onClick={handleBotKeyReveal}
+                      disabled={botKeyLoading || !botKeyInfo}
+                    >
+                      Reveal
+                    </button>
+                    <button
+                      className="hn-button small"
+                      type="button"
+                      onClick={handleBotKeyRegenerate}
+                      disabled={botKeyLoading}
+                    >
+                      {botKeyInfo ? "Regenerate" : "Generate"}
+                    </button>
+                  </div>
+                  {botKeyReveal && (
+                    <p>
+                      Bot key: <code>{botKeyReveal}</code>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <h4 style={{marginTop: "16px"}}>📡 Submit via API</h4>
               <p>POST JSON to <code>/api/webhook</code> with your bot key:</p>

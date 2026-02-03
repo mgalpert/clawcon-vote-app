@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { hashBotKey } from "../../../lib/botKeyCrypto";
 
 // Rate limiting per API key (resets on deploy)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -85,13 +86,14 @@ export async function POST(request: NextRequest) {
     }
 
     const apiKey = request.headers.get("x-api-key") || "";
+    const apiKeyHash = apiKey ? hashBotKey(apiKey) : "";
     const { data: keyRow } = await supabaseAdmin
       .from("bot_keys")
-      .select("email")
-      .eq("api_key", apiKey)
+      .select("id")
+      .eq("key_hash", apiKeyHash)
       .maybeSingle();
 
-    if (!apiKey || !keyRow?.email) {
+    if (!apiKey || !keyRow?.id) {
       return NextResponse.json({ error: "Invalid bot API key." }, { status: 401 });
     }
 
