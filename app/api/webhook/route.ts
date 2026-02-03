@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       : [];
     const links = rawLinks
       .map((link: string) => sanitizeLink(link.trim()))
-      .filter((link): link is string => link !== null);
+      .filter((link: string | null): link is string => link !== null);
 
     const submissionType =
       payload.submission_type === "topic" ? "topic" : "speaker_demo";
