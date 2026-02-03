@@ -6,7 +6,13 @@ create table if not exists public.submissions (
   description text not null,
   presenter_name text not null,
   links text[] null,
-  created_at timestamptz not null default now()
+  submission_type text not null default 'speaker_demo',
+  submitted_by text not null default 'human',
+  submitted_for_name text null,
+  submitted_for_contact text null,
+  created_at timestamptz not null default now(),
+  constraint submission_type_check check (submission_type in ('speaker_demo', 'topic')),
+  constraint submitted_by_check check (submitted_by in ('human', 'bot', 'bot_on_behalf'))
 );
 
 create table if not exists public.votes (
@@ -42,6 +48,9 @@ returns table (
   description text,
   presenter_name text,
   links text[],
+  submission_type text,
+  submitted_by text,
+  submitted_for_name text,
   created_at timestamptz,
   vote_count integer
 )
@@ -56,6 +65,9 @@ as $$
     s.description,
     s.presenter_name,
     s.links,
+    s.submission_type,
+    s.submitted_by,
+    s.submitted_for_name,
     s.created_at,
     coalesce(v.vote_count, 0) as vote_count
   from public.submissions s

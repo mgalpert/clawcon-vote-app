@@ -153,6 +153,38 @@ header {
   font-size: 14px;
 }
 
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0 12px;
+}
+
+.tab {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent-dark);
+}
+
+.muted {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.footer {
+  margin: 40px 0 20px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 640px) {
   main {
     padding: 32px 16px 48px;

@@ -11,6 +11,9 @@ interface Submission {
   presenter_name: string;
   links: string[] | null;
   vote_count: number;
+  submission_type: "speaker_demo" | "topic";
+  submitted_by: "human" | "bot" | "bot_on_behalf";
+  submitted_for_name: string | null;
 }
 
 export default function SubmissionBoard() {
@@ -25,6 +28,9 @@ export default function SubmissionBoard() {
   const [formDescription, setFormDescription] = useState("");
   const [formPresenter, setFormPresenter] = useState("");
   const [formLinks, setFormLinks] = useState("");
+  const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">(
+    "speaker_demo"
+  );
 
   const userEmail = session?.user?.email ?? null;
 
@@ -115,11 +121,16 @@ export default function SubmissionBoard() {
       .map((link) => link.trim())
       .filter(Boolean);
 
+    const presenterValue =
+      formPresenter || (activeTab === "topic" ? "Community" : "");
+
     const { error } = await supabase.from("submissions").insert({
       title: formTitle,
       description: formDescription,
-      presenter_name: formPresenter,
-      links: links.length > 0 ? links : null
+      presenter_name: presenterValue,
+      links: links.length > 0 ? links : null,
+      submission_type: activeTab,
+      submitted_by: "human"
     });
 
     setSubmitLoading(false);
@@ -137,14 +148,21 @@ export default function SubmissionBoard() {
   };
 
   const sortedSubmissions = useMemo(() => submissions, [submissions]);
+  const filteredSubmissions = useMemo(
+    () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
+    [sortedSubmissions, activeTab]
+  );
 
   return (
     <>
       <header>
         <h1>Event Submissions + Voting</h1>
         <p>
-          Vote on the sessions you want to see. Upvotes are limited to one per
-          authenticated email.
+          Help the community decide who they want to hear from at{" "}
+          <a href="https://luma.com/moltbot-sf-show-tell" target="_blank" rel="noreferrer">
+            Claw Con
+          </a>
+          . Upvotes are limited to one per authenticated email.
         </p>
         <div className="panel">
           <h3>Sign in to vote</h3>
@@ -182,6 +200,28 @@ export default function SubmissionBoard() {
         {notice ? <div className="notice">{notice}</div> : null}
       </header>
 
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === "speaker_demo" ? "active" : ""}`}
+          onClick={() => setActiveTab("speaker_demo")}
+        >
+          Speaker demos
+        </button>
+        <button
+          className={`tab ${activeTab === "topic" ? "active" : ""}`}
+          onClick={() => setActiveTab("topic")}
+        >
+          Topics
+        </button>
+      </div>
+
+      {activeTab === "topic" ? (
+        <div className="panel">
+          <strong>Suggested topics:</strong> Security, Skills, Agents,
+          Memory, Tooling, Orchestration, Evaluation, Observability.
+        </div>
+      ) : null}
+
       {session ? (
         <section className="panel">
           <h2>Submit a session</h2>
@@ -189,7 +229,11 @@ export default function SubmissionBoard() {
             <input
               className="input"
               type="text"
-              placeholder="Talk title"
+              placeholder={
+                activeTab === "speaker_demo"
+                  ? "Demo title"
+                  : "Topic title"
+              }
               value={formTitle}
               onChange={(event) => setFormTitle(event.target.value)}
               required
@@ -204,7 +248,11 @@ export default function SubmissionBoard() {
             <input
               className="input"
               type="text"
-              placeholder="Presenter name"
+              placeholder={
+                activeTab === "speaker_demo"
+                  ? "Presenter name"
+                  : "Topic lead (optional)"
+              }
               value={formPresenter}
               onChange={(event) => setFormPresenter(event.target.value)}
               required
@@ -224,16 +272,23 @@ export default function SubmissionBoard() {
       ) : null}
 
       <section className="grid">
-        {sortedSubmissions.length === 0 ? (
+        {filteredSubmissions.length === 0 ? (
           <div className="panel">No submissions yet. Add the first one!</div>
         ) : (
-          sortedSubmissions.map((submission) => (
+          filteredSubmissions.map((submission) => (
             <article key={submission.id} className="panel card">
               <div>
                 <h2>{submission.title}</h2>
                 <p>{submission.description}</p>
                 <p>
                   <strong>Presenter:</strong> {submission.presenter_name}
+                </p>
+                <p className="muted">
+                  {submission.submitted_by === "bot_on_behalf"
+                    ? `Submitted by bot on behalf of ${
+                        submission.submitted_for_name || "someone"
+                      }`
+                    : `Submitted by ${submission.submitted_by}`}
                 </p>
               </div>
               {submission.links && submission.links.length > 0 ? (
@@ -269,6 +324,14 @@ export default function SubmissionBoard() {
           ))
         )}
       </section>
+
+      <footer className="footer">
+        Orchestrated by Clawd + agents. Tokens sponsored by{" "}
+        <a href="https://x.com/msg" target="_blank" rel="noreferrer">
+          @msg
+        </a>
+        .
+      </footer>
     </>
   );
 }
