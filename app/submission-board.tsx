@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 
@@ -15,6 +15,25 @@ function sanitizeLink(link: string): string | null {
   }
 }
 
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function timeAgo(date: string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
 interface Submission {
   id: string;
   title: string;
@@ -26,6 +45,7 @@ interface Submission {
   submitted_by: "human" | "bot" | "bot_on_behalf";
   submitted_for_name: string | null;
   is_openclaw_contributor: boolean;
+  created_at?: string;
 }
 
 export default function SubmissionBoard() {
@@ -42,6 +62,9 @@ export default function SubmissionBoard() {
   const [formLinks, setFormLinks] = useState("");
   const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">("speaker_demo");
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [displayCount, setDisplayCount] = useState(30);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   const userEmail = session?.user?.email ?? null;
 
@@ -76,6 +99,28 @@ export default function SubmissionBoard() {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  // Infinite scroll observer
+  const loadMore = useCallback(() => {
+    setDisplayCount((prev) => prev + 30);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleMagicLink = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -175,10 +220,18 @@ export default function SubmissionBoard() {
       return b.vote_count - a.vote_count;
     });
   }, [submissions]);
+
   const filteredSubmissions = useMemo(
     () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
     [sortedSubmissions, activeTab]
   );
+
+  const visibleSubmissions = useMemo(
+    () => filteredSubmissions.slice(0, displayCount),
+    [filteredSubmissions, displayCount]
+  );
+
+  const hasMore = displayCount < filteredSubmissions.length;
 
   return (
     <>
@@ -189,7 +242,7 @@ export default function SubmissionBoard() {
             <button className="modal-close" onClick={() => setShowSignInModal(false)}>×</button>
             <h2>Sign in to vote</h2>
             <p>We'll email you a one-click magic link. No password needed.</p>
-            <form onSubmit={handleMagicLink} className="grid">
+            <form onSubmit={handleMagicLink} className="modal-form">
               <input
                 className="input"
                 type="email"
@@ -199,7 +252,7 @@ export default function SubmissionBoard() {
                 required
                 autoFocus
               />
-              <button className="button" type="submit" disabled={loading}>
+              <button className="hn-button" type="submit" disabled={loading}>
                 {loading ? "Sending..." : "Send magic link"}
               </button>
             </form>
@@ -207,214 +260,295 @@ export default function SubmissionBoard() {
         </div>
       )}
 
-      <header className="hero">
-        <h1>Vote for the sessions you want at Claw Con</h1>
-        <p>
-          Browse demos and topics, then upvote your favorites. One vote per email.{" "}
-          <a href="https://luma.com/moltbot-sf-show-tell" target="_blank" rel="noreferrer">
-            Learn more about Claw Con →
-          </a>
-        </p>
-        {userEmail ? (
-          <div className="user-bar">
-            <span className="badge">Signed in as {userEmail}</span>
-            <button className="button secondary small" onClick={handleSignOut}>
-              Sign out
-            </button>
+      {/* Header with sidebar layout */}
+      <div className="hn-header">
+        <div className="hn-header-left">
+          <div className="hn-logo">
+            <span className="hn-logo-icon">🦞</span>
+            <span className="hn-logo-text">Claw Con</span>
           </div>
-        ) : null}
-        {notice ? <div className="notice">{notice}</div> : null}
-      </header>
-
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === "speaker_demo" ? "active" : ""}`}
-          onClick={() => setActiveTab("speaker_demo")}
-        >
-          Live demos
-        </button>
-        <button
-          className={`tab ${activeTab === "topic" ? "active" : ""}`}
-          onClick={() => setActiveTab("topic")}
-        >
-          Talk topics
-        </button>
+          <nav className="hn-nav">
+            <button
+              className={`hn-nav-link ${activeTab === "speaker_demo" ? "active" : ""}`}
+              onClick={() => { setActiveTab("speaker_demo"); setDisplayCount(30); }}
+            >
+              demos
+            </button>
+            <span className="hn-nav-sep">|</span>
+            <button
+              className={`hn-nav-link ${activeTab === "topic" ? "active" : ""}`}
+              onClick={() => { setActiveTab("topic"); setDisplayCount(30); }}
+            >
+              topics
+            </button>
+            <span className="hn-nav-sep">|</span>
+            <a href="https://lu.ma/moltbot-sf-show-tell" target="_blank" rel="noreferrer" className="hn-nav-link">
+              register
+            </a>
+          </nav>
+          {userEmail && (
+            <div className="hn-user">
+              <span>{userEmail}</span>
+              <button className="hn-link" onClick={handleSignOut}>logout</button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {activeTab === "topic" ? (
-        <div className="panel soft">
-          <strong>💡 Suggested topics:</strong> Agent security, skill routing, memory design, orchestration patterns, evaluation frameworks, observability.
-        </div>
-      ) : (
-        <div className="panel soft">
-          <strong>🎬 Demo ideas:</strong> Multi-agent workflows, safe tool gating, vector memory, eval harness, skill routers.<br />
-          <span className="muted">Include a GitHub repo or video link. Open source projects get priority! 🌟</span>
-        </div>
-      )}
+      {notice && <div className="hn-notice">{notice}</div>}
 
-      <section className="grid submissions-grid">
-        {filteredSubmissions.length === 0 ? (
-          <div className="panel empty-state">
-            No submissions yet — be the first to add one! 🚀
-          </div>
-        ) : (
-          filteredSubmissions.map((submission) => (
-            <article key={submission.id} className="panel card">
-              <div>
-                <h2>{submission.title}</h2>
-                <p>{submission.description}</p>
-                <p>
-                  <strong>Presenter:</strong> {submission.presenter_name}
-                </p>
-                <p className="muted">
-                  {submission.submitted_by === "bot_on_behalf"
-                    ? `Submitted by bot on behalf of ${submission.submitted_for_name || "someone"}`
-                    : `Submitted by ${submission.submitted_by}`}
-                </p>
-              </div>
-              {submission.links && submission.links.length > 0 ? (
-                <div className="links">
-                  {submission.links.map((link) => (
-                    <a
-                      key={link}
-                      href={link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="link-pill"
-                    >
-                      {link.replace(/^https?:\/\//, "")}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
-              <div className="card-footer">
-                <div className="badges">
-                  <span className="badge">{submission.vote_count} votes</span>
-                  {submission.is_openclaw_contributor && (
-                    <span className="badge contributor">🦞 OpenClaw Contributor</span>
-                  )}
-                  {submission.links?.some((l) => l.includes("github.com")) && (
-                    <span className="badge oss">Open Source</span>
-                  )}
-                </div>
-                <button
-                  className="button"
-                  onClick={() => handleVote(submission.id)}
-                  disabled={voteLoading === submission.id}
-                >
-                  {voteLoading === submission.id ? "Voting..." : "Upvote"}
+      <div className="hn-layout">
+        {/* Main content - submissions list */}
+        <main className="hn-main">
+          <table className="hn-table">
+            <tbody>
+              {visibleSubmissions.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="hn-empty">
+                    No submissions yet — be the first!
+                  </td>
+                </tr>
+              ) : (
+                visibleSubmissions.map((submission, index) => {
+                  const primaryLink = submission.links?.[0];
+                  const domain = primaryLink ? getDomain(primaryLink) : null;
+                  const isExpanded = expandedId === submission.id;
+
+                  return (
+                    <>
+                      <tr key={submission.id} className="hn-row">
+                        <td className="hn-rank">{index + 1}.</td>
+                        <td className="hn-vote">
+                          <button
+                            className="hn-upvote"
+                            onClick={() => handleVote(submission.id)}
+                            disabled={voteLoading === submission.id}
+                            title="upvote"
+                          >
+                            ▲
+                          </button>
+                        </td>
+                        <td className="hn-content">
+                          <div className="hn-title-row">
+                            {primaryLink ? (
+                              <a href={primaryLink} target="_blank" rel="noreferrer" className="hn-title">
+                                {submission.title}
+                              </a>
+                            ) : (
+                              <span className="hn-title">{submission.title}</span>
+                            )}
+                            {domain && (
+                              <span className="hn-domain">({domain})</span>
+                            )}
+                            {submission.is_openclaw_contributor && (
+                              <span className="hn-badge contributor" title="OpenClaw Contributor">🦞</span>
+                            )}
+                            {submission.links?.some((l) => l.includes("github.com")) && (
+                              <span className="hn-badge oss" title="Open Source">⭐</span>
+                            )}
+                          </div>
+                          <div className="hn-meta">
+                            <span className="hn-points">{submission.vote_count} point{submission.vote_count !== 1 ? "s" : ""}</span>
+                            {" by "}
+                            <span className="hn-presenter">{submission.presenter_name}</span>
+                            {submission.created_at && (
+                              <>
+                                {" "}
+                                <span className="hn-time">{timeAgo(submission.created_at)}</span>
+                              </>
+                            )}
+                            {" | "}
+                            <button
+                              className="hn-link"
+                              onClick={() => setExpandedId(isExpanded ? null : submission.id)}
+                            >
+                              {isExpanded ? "hide" : "details"}
+                            </button>
+                            {submission.links && submission.links.length > 1 && (
+                              <>
+                                {" | "}
+                                <span className="hn-links-count">{submission.links.length} links</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${submission.id}-expanded`} className="hn-expanded-row">
+                          <td></td>
+                          <td></td>
+                          <td className="hn-expanded-content">
+                            <p className="hn-description">{submission.description}</p>
+                            {submission.links && submission.links.length > 0 && (
+                              <div className="hn-links-list">
+                                {submission.links.map((link) => (
+                                  <a key={link} href={link} target="_blank" rel="noreferrer" className="hn-link-item">
+                                    {link.replace(/^https?:\/\//, "")}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                            <p className="hn-submitted-by">
+                              {submission.submitted_by === "bot_on_behalf"
+                                ? `Submitted by bot on behalf of ${submission.submitted_for_name || "someone"}`
+                                : `Submitted by ${submission.submitted_by}`}
+                            </p>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+
+          {/* Infinite scroll trigger */}
+          {hasMore && (
+            <div ref={loaderRef} className="hn-loader">
+              Loading more...
+            </div>
+          )}
+
+          {!hasMore && filteredSubmissions.length > 0 && (
+            <div className="hn-end">
+              — {filteredSubmissions.length} submissions —
+            </div>
+          )}
+        </main>
+
+        {/* Sidebar - submit form */}
+        <aside className="hn-sidebar">
+          <div className="hn-sidebar-box">
+            <h3>Submit a {activeTab === "speaker_demo" ? "Demo" : "Topic"}</h3>
+            {session ? (
+              <form onSubmit={handleSubmission} className="hn-form">
+                <label>
+                  Title
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={activeTab === "speaker_demo" ? "Your demo name" : "Topic title"}
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Description
+                  <textarea
+                    className="input"
+                    placeholder="What will attendees learn? 1–3 sentences."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    required
+                    rows={3}
+                  />
+                </label>
+                <label>
+                  {activeTab === "speaker_demo" ? "Presenter" : "Lead (optional)"}
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Your name"
+                    value={formPresenter}
+                    onChange={(e) => setFormPresenter(e.target.value)}
+                    required={activeTab === "speaker_demo"}
+                  />
+                </label>
+                <label>
+                  Links {activeTab === "speaker_demo" ? "(required)" : "(optional)"}
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="https://github.com/..."
+                    value={formLinks}
+                    onChange={(e) => setFormLinks(e.target.value)}
+                    required={activeTab === "speaker_demo"}
+                  />
+                </label>
+                <button className="hn-button" type="submit" disabled={submitLoading}>
+                  {submitLoading ? "Submitting..." : "Submit"}
+                </button>
+              </form>
+            ) : (
+              <div className="hn-signin-prompt">
+                <p>Sign in to submit a session.</p>
+                <button className="hn-button" onClick={() => setShowSignInModal(true)}>
+                  Sign in
                 </button>
               </div>
-            </article>
-          ))
-        )}
-      </section>
+            )}
+          </div>
 
-      {session ? (
-        <section className="panel">
-          <h2>Submit a session</h2>
-          <p className="muted">Share your demo or topic idea with the community.</p>
-          <form onSubmit={handleSubmission} className="grid">
-            <input
-              className="input"
-              type="text"
-              placeholder={activeTab === "speaker_demo" ? "Demo title" : "Topic title"}
-              value={formTitle}
-              onChange={(event) => setFormTitle(event.target.value)}
-              required
-            />
-            <textarea
-              className="input"
-              placeholder="What will attendees learn or see? 1–3 sentences."
-              value={formDescription}
-              onChange={(event) => setFormDescription(event.target.value)}
-              required
-            />
-            <input
-              className="input"
-              type="text"
-              placeholder={activeTab === "speaker_demo" ? "Presenter name" : "Topic lead (optional)"}
-              value={formPresenter}
-              onChange={(event) => setFormPresenter(event.target.value)}
-              required={activeTab === "speaker_demo"}
-            />
-            <input
-              className="input"
-              type="text"
-              placeholder={activeTab === "speaker_demo" ? "GitHub repo or video link (required)" : "GitHub repo or video link (optional)"}
-              value={formLinks}
-              onChange={(event) => setFormLinks(event.target.value)}
-              required={activeTab === "speaker_demo"}
-            />
-            <button className="button" type="submit" disabled={submitLoading}>
-              {submitLoading ? "Submitting..." : "Submit session"}
-            </button>
-          </form>
-        </section>
-      ) : (
-        <section className="panel">
-          <h2>Want to submit?</h2>
-          <p>
-            <button className="button" onClick={() => setShowSignInModal(true)}>
-              Sign in to submit a session
-            </button>
-          </p>
-        </section>
-      )}
+          <div className="hn-sidebar-box">
+            <h4>
+              {activeTab === "speaker_demo" ? "🎬 Demo ideas" : "💡 Topic ideas"}
+            </h4>
+            {activeTab === "speaker_demo" ? (
+              <ul className="hn-ideas">
+                <li>Multi-agent workflows</li>
+                <li>Safe tool gating</li>
+                <li>Vector memory</li>
+                <li>Eval harness</li>
+                <li>Skill routers</li>
+              </ul>
+            ) : (
+              <ul className="hn-ideas">
+                <li>Agent security</li>
+                <li>Skill routing</li>
+                <li>Memory design</li>
+                <li>Orchestration patterns</li>
+                <li>Evaluation frameworks</li>
+                <li>Observability</li>
+              </ul>
+            )}
+            <p className="hn-tip">
+              {activeTab === "speaker_demo"
+                ? "Open source projects get priority! 🌟"
+                : "Lead a discussion on any of these or propose your own."}
+            </p>
+          </div>
 
-      <details className="panel">
-        <summary><strong>🤖 For bots: API submission</strong></summary>
-        
-        <h3>🔑 Get a bot key</h3>
-        <p>One key per human email. We'll show it once — save it securely.</p>
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const target = event.currentTarget as HTMLFormElement;
-            const form = new FormData(target);
-            const emailValue = String(form.get("bot_email") || "").trim();
-            if (!emailValue) return;
-            setNotice(null);
-            const response = await fetch("/api/bot-key", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: emailValue })
-            });
-            const data = await response.json();
-            if (!response.ok) {
-              setNotice(data.error || "Unable to issue bot key.");
-              return;
-            }
-            setNotice(`Bot key for ${emailValue}: ${data.api_key}`);
-          }}
-          className="grid"
-        >
-          <input className="input" type="email" name="bot_email" placeholder="human@email.com" required />
-          <button className="button" type="submit">Request bot key</button>
-        </form>
+          <details className="hn-sidebar-box hn-api-box">
+            <summary><strong>🤖 Bot API</strong></summary>
+            <div className="hn-api-content">
+              <p>POST to <code>/api/webhook</code> with your bot key.</p>
+              <form
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  const form = new FormData(event.currentTarget);
+                  const emailValue = String(form.get("bot_email") || "").trim();
+                  if (!emailValue) return;
+                  setNotice(null);
+                  const response = await fetch("/api/bot-key", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: emailValue })
+                  });
+                  const data = await response.json();
+                  if (!response.ok) {
+                    setNotice(data.error || "Unable to issue bot key.");
+                    return;
+                  }
+                  setNotice(`Bot key: ${data.api_key}`);
+                }}
+                className="hn-form"
+              >
+                <input className="input" type="email" name="bot_email" placeholder="your@email.com" required />
+                <button className="hn-button small" type="submit">Get key</button>
+              </form>
+            </div>
+          </details>
+        </aside>
+      </div>
 
-        <h3 style={{marginTop: "1.5rem"}}>📡 Submit via API</h3>
-        <p>POST JSON to <code>/api/webhook</code> with your bot key.</p>
-        <pre className="code-block">{`POST https://www.claw-con.com/api/webhook
-Content-Type: application/json
-x-api-key: <YOUR_BOT_KEY>
-
-{
-  "title": "Secure Skill Orchestration",
-  "description": "How we keep agent tools safe at scale.",
-  "presenter_name": "Jane Doe",
-  "submission_type": "topic",
-  "submitted_by": "bot_on_behalf",
-  "submitted_for_name": "Jane Doe",
-  "submitted_for_contact": "jane@email",
-  "links": ["https://example.com/demo"]
-}`}</pre>
-      </details>
-
-      <footer className="footer">
-        Orchestrated by Clawd + agents. Tokens sponsored by{" "}
-        <a href="https://x.com/msg" target="_blank" rel="noreferrer">@msg</a>. Source on{" "}
-        <a href="https://github.com/mgalpert/clawcon-vote-app" target="_blank" rel="noreferrer">GitHub</a>.
+      <footer className="hn-footer">
+        <a href="https://github.com/mgalpert/clawcon-vote-app" target="_blank" rel="noreferrer">Source</a>
+        {" | "}
+        <span>Orchestrated by Clawd</span>
+        {" | "}
+        <span>Tokens by <a href="https://x.com/msg" target="_blank" rel="noreferrer">@msg</a></span>
       </footer>
     </>
   );

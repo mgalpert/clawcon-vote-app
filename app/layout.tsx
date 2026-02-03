@@ -1,11 +1,8 @@
 import "./globals.css";
-import { Space_Grotesk } from "next/font/google";
-
-const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Event Submissions",
-  description: "Submit and vote on event sessions."
+  title: "Claw Con – Submit & Vote",
+  description: "Submit and vote on demos and topics for Claw Con."
 };
 
 export default function RootLayout({
@@ -14,7 +11,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={spaceGrotesk.className}>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
