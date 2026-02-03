@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ api_key: apiKey });
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload." }, { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("bot-key error:", message, err);
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
