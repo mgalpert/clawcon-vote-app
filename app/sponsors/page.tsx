@@ -38,17 +38,17 @@ export default function SponsorsPage() {
         .sp-emoji { font-size: 56px; margin-bottom: 8px; }
         .sp-title { font-size: clamp(28px, 5vw, 48px); font-weight: 900; letter-spacing: -1.5px; background: linear-gradient(135deg, #ff6b5a 0%, #ff4530 50%, #ff6b5a 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.15; margin: 0 0 12px; }
         .sp-subtitle { font-size: 18px; font-weight: 500; color: rgba(255,255,255,0.4); letter-spacing: 6px; text-transform: uppercase; margin: 0; }
-        .sp-grid { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        .sp-card { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 16px 20px; min-height: 160px; text-decoration: none; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
+        .sp-grid { max-width: 1400px; margin: 0 auto; padding: 0 24px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+        .sp-card { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 12px 14px; min-height: 130px; text-decoration: none; transition: background 0.2s, border-color 0.2s, transform 0.2s; }
         .sp-card:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
-        .sp-logo-wrap { width: 160px; height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+        .sp-logo-wrap { width: 140px; height: 55px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
         .sp-logo-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .sp-logo-wrap img.invert { filter: brightness(0) invert(1); opacity: 0.85; }
         .sp-logo-wrap img.white { opacity: 0.9; }
         .sp-text-logo { font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; letter-spacing: -0.3px; }
         .sp-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7); text-align: center; }
         .sp-contrib { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; text-align: center; }
-        .sp-footer { text-align: center; padding: 24px; font-size: 13px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+        .sp-footer { text-align: center; padding: 16px; font-size: 12px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
       `}</style>
       <div className="sp-body">
         <header className="sp-header">
@@ -63,7 +63,7 @@ export default function SponsorsPage() {
           <Link href="/molt" className="sp-nav-link" style={{ color: "#000", fontFamily: "Verdana, Geneva, sans-serif", fontSize: "10pt", textDecoration: "none" }}>molt</Link>
         </header>
 
-        <div style={{ height: "40px" }}></div>
+        <div style={{ height: "16px" }}></div>
 
         <div className="sp-grid">
           {sponsors.map((sponsor) => (
