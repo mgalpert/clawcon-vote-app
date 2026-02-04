@@ -33,6 +33,28 @@ export default function SubmissionBoard() {
 
   const userEmail = session?.user?.email ?? null;
 
+  // Memoized derived state (needed before infinite scroll effect)
+  const sortedSubmissions = useMemo(() => {
+    return [...submissions].sort((a, b) => {
+      const aHasGithub = a.links?.some((l) => l.includes("github.com")) ? 1 : 0;
+      const bHasGithub = b.links?.some((l) => l.includes("github.com")) ? 1 : 0;
+      if (bHasGithub !== aHasGithub) return bHasGithub - aHasGithub;
+      return b.vote_count - a.vote_count;
+    });
+  }, [submissions]);
+
+  const filteredSubmissions = useMemo(
+    () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
+    [sortedSubmissions, activeTab]
+  );
+
+  const visibleSubmissions = useMemo(
+    () => filteredSubmissions.slice(0, displayCount),
+    [filteredSubmissions, displayCount]
+  );
+
+  const hasMore = displayCount < filteredSubmissions.length;
+
   const fetchSubmissions = async () => {
     const { data, error } = await supabase.rpc("get_submissions_with_votes");
     if (error) {
@@ -95,6 +117,9 @@ export default function SubmissionBoard() {
   }, []);
 
   useEffect(() => {
+    const current = loaderRef.current;
+    if (!current) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -104,12 +129,10 @@ export default function SubmissionBoard() {
       { threshold: 0.1 }
     );
 
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
+    observer.observe(current);
 
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, hasMore]);
 
   const handleMagicLink = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -201,27 +224,6 @@ export default function SubmissionBoard() {
     fetchSubmissions();
   };
 
-  const sortedSubmissions = useMemo(() => {
-    return [...submissions].sort((a, b) => {
-      const aHasGithub = a.links?.some((l) => l.includes("github.com")) ? 1 : 0;
-      const bHasGithub = b.links?.some((l) => l.includes("github.com")) ? 1 : 0;
-      if (bHasGithub !== aHasGithub) return bHasGithub - aHasGithub;
-      return b.vote_count - a.vote_count;
-    });
-  }, [submissions]);
-
-  const filteredSubmissions = useMemo(
-    () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
-    [sortedSubmissions, activeTab]
-  );
-
-  const visibleSubmissions = useMemo(
-    () => filteredSubmissions.slice(0, displayCount),
-    [filteredSubmissions, displayCount]
-  );
-
-  const hasMore = displayCount < filteredSubmissions.length;
-
   const handleBotKeyReveal = async () => {
     if (!session) {
       setShowSignInModal(true);
@@ -270,7 +272,6 @@ export default function SubmissionBoard() {
     setNotice(data.warning || "Bot key regenerated. Copy it now.");
     fetchBotKeyInfo();
   };
-
   return (
     <>
       {/* Sign-in Modal */}
