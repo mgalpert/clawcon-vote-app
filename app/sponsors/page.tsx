@@ -11,7 +11,7 @@ const sponsors = [
   { name: "CodeRabbit", contribution: "Drinks & Snacks", logo: "/sponsors/coderabbit.svg", url: "https://www.coderabbit.ai/", invert: true },
   { name: "Cua", contribution: "Drinks & Snacks", logo: "/sponsors/cua.svg", url: "https://cua.ai/", invert: false },
   { name: "Cline", contribution: "Drinks & Utensils", logo: "/sponsors/cline.svg", url: "https://cline.bot/", invert: true },
-  { name: "Render", contribution: "Drinks & Chips", logo: "/sponsors/render.svg", url: "https://render.com", invert: false },
+  { name: "Render", contribution: "Claws, Chips, Cola & Credits", logo: "/sponsors/render.svg", url: "https://render.com", invert: false },
   { name: "ElevenLabs", contribution: "Drinks & Snacks", logo: "/sponsors/elevenlabs.svg", url: "https://elevenlabs.io/", invert: false },
   { name: "DigitalOcean", contribution: "Drinks", logo: "/sponsors/digitalocean.svg", url: "https://www.digitalocean.com/", invert: false },
   { name: "Rippling", contribution: "Lobster Plushies", logo: "/sponsors/rippling.svg", url: "https://www.rippling.com/", invert: true },
