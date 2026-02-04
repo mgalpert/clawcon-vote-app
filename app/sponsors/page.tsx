@@ -16,7 +16,7 @@ const sponsors = [
   { name: "DigitalOcean", contribution: "Drinks", logo: "/sponsors/digitalocean.svg", url: "https://www.digitalocean.com/", invert: false },
   { name: "Rippling", contribution: "Lobster Plushies", logo: "/sponsors/rippling.svg", url: "https://www.rippling.com/", invert: true },
   { name: "Dabl Club", contribution: "Event Support", logo: "/sponsors/dabl.svg", url: "https://dabl.club", invert: false },
-  { name: "Love Haight Computers", contribution: "Mac Mini Giveaway", logo: "/sponsors/lovehaight.jpg", url: "https://www.lovehaightcomputers.com/", invert: false },
+  { name: "Love Haight Computers", contribution: "Mac Mini Giveaway", logo: "", url: "https://www.lovehaightcomputers.com/", invert: false, textOnly: true },
 ];
 
 export const metadata = {
@@ -45,6 +45,7 @@ export default function SponsorsPage() {
         .sp-logo-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .sp-logo-wrap img.invert { filter: brightness(0) invert(1); opacity: 0.85; }
         .sp-logo-wrap img.white { opacity: 0.9; }
+        .sp-text-logo { font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.2; letter-spacing: -0.3px; }
         .sp-name { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.7); text-align: center; }
         .sp-contrib { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; text-align: center; }
         .sp-footer { text-align: center; padding: 24px; font-size: 13px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
@@ -76,12 +77,16 @@ export default function SponsorsPage() {
               className="sp-card"
             >
               <div className="sp-logo-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={sponsor.logo}
-                  alt={sponsor.name}
-                  className={sponsor.invert ? "invert" : "white"}
-                />
+                {"textOnly" in sponsor && sponsor.textOnly ? (
+                  <span className="sp-text-logo">{sponsor.name}</span>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={sponsor.logo}
+                    alt={sponsor.name}
+                    className={sponsor.invert ? "invert" : "white"}
+                  />
+                )}
               </div>
               <div className="sp-name">{sponsor.name}</div>
               <div className="sp-contrib">{sponsor.contribution}</div>
