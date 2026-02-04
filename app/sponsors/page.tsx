@@ -63,11 +63,7 @@ export default function SponsorsPage() {
           <Link href="/molt" className="sp-nav-link" style={{ color: "#000", fontFamily: "Verdana, Geneva, sans-serif", fontSize: "10pt", textDecoration: "none" }}>molt</Link>
         </header>
 
-        <div className="sp-hero">
-          <div className="sp-emoji">🦞</div>
-          <h1 className="sp-title">ClawCon: 1st OpenClaw SF Show & Tell</h1>
-          <p className="sp-subtitle">Thank You to Our Sponsors</p>
-        </div>
+        <div style={{ height: "40px" }}></div>
 
         <div className="sp-grid">
           {sponsors.map((sponsor) => (
