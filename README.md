@@ -13,6 +13,7 @@ A simple event submission board with upvoting. Submissions arrive via a webhook,
 ### 1) Supabase project
 1. Create a new Supabase project.
 2. Open the SQL editor and run `supabase.sql`.
+3. Run `supabase/bot-keys-encryption.sql` to enable encrypted bot keys.
 3. In **Authentication → Providers**, enable **Email** (magic link).
 4. Add your site URL (local + production) to **Authentication → URL Configuration**.
 
@@ -23,6 +24,8 @@ Copy `.env.example` to `.env.local` and fill in:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_SITE_URL` (e.g. `http://localhost:3000`)
+- `BOT_KEY_ENC_KEY` (32-byte secret or longer input for HKDF derivation)
+- `BOT_KEY_ENC_KEY_VERSION` (optional, default `1`)
 
 ### 3) Install + run
 ```bash
