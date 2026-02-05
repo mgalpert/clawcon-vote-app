@@ -138,23 +138,108 @@ export default function SubmissionBoard() {
 
   const handleMagicLink = async (event: React.FormEvent) => {
     event.preventDefault();
-    setNotice("Sign-up is currently disabled. Thanks for attending Claw Con! 🦞");
-    return;
+    setNotice(null);
+
+    if (isBlockedEmail(email)) {
+      setNotice("Please use a real email address (agentmail.to is blocked). ");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL || undefined,
+      },
+    });
+    setLoading(false);
+
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+
+    setNotice("Magic link sent — check your email.");
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
-  const handleVote = async (_submissionId: string) => {
-    setNotice("Voting is currently disabled. Thanks for attending Claw Con! 🦞");
-    return;
+  const handleVote = async (submissionId: string) => {
+    if (!session) {
+      setShowSignInModal(true);
+      return;
+    }
+
+    setNotice(null);
+    setVoteLoading(submissionId);
+
+    const { error } = await supabase.from("votes").insert({ submission_id: submissionId });
+
+    setVoteLoading(null);
+
+    if (error) {
+      // unique constraint violation => already voted
+      // Postgres unique violation code: 23505
+      // (supabase-js exposes it as `code`)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const code = (error as any).code;
+      if (code === "23505") {
+        setNotice("You already voted on that.");
+        return;
+      }
+
+      setNotice(error.message);
+      return;
+    }
+
+    fetchSubmissions();
   };
 
   const handleSubmission = async (event: React.FormEvent) => {
     event.preventDefault();
-    setNotice("Submissions are currently disabled. Thanks for attending Claw Con! 🦞");
-    return;
+
+    if (!session) {
+      setShowSignInModal(true);
+      return;
+    }
+
+    setNotice(null);
+    setSubmitLoading(true);
+
+    const links = formLinks
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((l) => sanitizeLink(l))
+      .filter((l): l is string => Boolean(l));
+
+    const payload = {
+      title: formTitle.trim(),
+      description: formDescription.trim(),
+      presenter_name: formPresenter.trim() || "Anonymous",
+      links: links.length ? links : null,
+      submission_type: activeTab,
+      submitted_by: "human" as const,
+    };
+
+    const { error } = await supabase.from("submissions").insert(payload);
+
+    setSubmitLoading(false);
+
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+
+    setFormTitle("");
+    setFormDescription("");
+    setFormPresenter("");
+    setFormLinks("");
+
+    setNotice("Submitted!");
+    fetchSubmissions();
   };
 
   const handleBotKeyReveal = async () => {
