@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../lib/supabaseAdmin";
+import { getSupabaseAdmin } from "../../../lib/supabaseAdmin";
 import { hashBotKey } from "../../../lib/botKeyCrypto";
 
 // Rate limiting per API key (resets on deploy)
@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
 
     const apiKey = request.headers.get("x-api-key") || "";
     const apiKeyHash = apiKey ? hashBotKey(apiKey) : "";
+    const supabaseAdmin = getSupabaseAdmin();
+
     const { data: keyRow } = await supabaseAdmin
       .from("bot_keys")
       .select("id")

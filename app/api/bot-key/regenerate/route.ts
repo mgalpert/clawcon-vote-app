@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { encryptBotKey, getKeyVersion, hashBotKey } from "../../../../lib/botKeyCrypto";
 
 function generateBotKey(): string {
@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
+
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
   const user = authData?.user;

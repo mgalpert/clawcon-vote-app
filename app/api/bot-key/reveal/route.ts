@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
+import { getSupabaseAdmin } from "../../../../lib/supabaseAdmin";
 import { decryptBotKey } from "../../../../lib/botKeyCrypto";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
+
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
   const user = authData?.user;
