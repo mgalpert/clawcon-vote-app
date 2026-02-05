@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Claw Con – Submit & Vote",
-  description: "Submit and vote on demos and topics for Claw Con."
+  title: "ClawdCon – Submit & Vote",
+  description: "Submit and vote on demos and topics for ClawdCon."
 };
 
 export default function RootLayout({

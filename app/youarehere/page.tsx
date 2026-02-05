@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "You Are Here – ClawCon SF",
+  title: "You Are Here – ClawdCon SF",
 };
 
 export default function YouAreHerePage() {

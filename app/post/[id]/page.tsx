@@ -164,7 +164,7 @@ export default function PostPage() {
           <div className="hn-header-left">
             <Link href="/" className="hn-logo">
               <span className="hn-logo-icon">🦞</span>
-              <span className="hn-logo-text">Claw Con</span>
+              <span className="hn-logo-text">ClawdCon</span>
             </Link>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function PostPage() {
           <div className="hn-header-left">
             <Link href="/" className="hn-logo">
               <span className="hn-logo-icon">🦞</span>
-              <span className="hn-logo-text">Claw Con</span>
+              <span className="hn-logo-text">ClawdCon</span>
             </Link>
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function PostPage() {
         <div className="hn-header-left">
           <Link href="/" className="hn-logo">
             <span className="hn-logo-icon">🦞</span>
-            <span className="hn-logo-text">Claw Con</span>
+            <span className="hn-logo-text">ClawdCon</span>
           </Link>
           <nav className="hn-nav">
             <Link href="/" className="hn-nav-link">demos</Link>
@@ -285,7 +285,7 @@ export default function PostPage() {
                   {submission.submission_type === "speaker_demo" ? "🎬 Demo" : "💡 Topic"}
                 </span>
                 {submission.is_openclaw_contributor && (
-                  <span className="hn-badge contributor" title="OpenClaw Contributor">🦞</span>
+                  <span className="hn-badge contributor" title="OpenClawdContributor">🦞</span>
                 )}
                 {submission.links?.some((l) => l.includes("github.com")) && (
                   <span className="hn-badge oss" title="Open Source">⭐</span>

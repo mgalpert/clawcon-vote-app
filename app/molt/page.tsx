@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Molt – ClawCon SF",
+  title: "Molt – ClawdCon SF",
 };
 
 export default function MoltPage() {
