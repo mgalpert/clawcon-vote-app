@@ -38,7 +38,7 @@ const MONTHS = [
 
 type ViewMode = "list" | "grid";
 
-type CategoryKey = "show-tell" | "workshop" | "meetup" | "conference";
+type CategoryKey = "demo-day" | "workshop" | "meetup" | "conference";
 
 function slugify(s: string): string {
   return s
@@ -78,7 +78,7 @@ export default function EventsClient() {
 
   // Form state
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<CategoryKey>("show-tell");
+  const [category, setCategory] = useState<CategoryKey>("demo-day");
   const [cityName, setCityName] = useState(city.label);
   const [month, setMonth] = useState<string>("feb");
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -463,7 +463,7 @@ export default function EventsClient() {
                     value={category}
                     onChange={(e) => setCategory(e.target.value as CategoryKey)}
                   >
-                    <option value="show-tell">show-tell</option>
+                    <option value="demo-day">demo-day</option>
                     <option value="meetup">meetup</option>
                     <option value="workshop">workshop</option>
                     <option value="conference">conference</option>
