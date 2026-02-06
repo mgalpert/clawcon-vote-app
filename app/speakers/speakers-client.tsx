@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 
@@ -30,9 +31,13 @@ function uniq<T>(arr: T[]): T[] {
 }
 
 export default function SpeakersClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const cityKey = searchParams.get("city") || DEFAULT_CITY_KEY;
   const city = getCity(cityKey);
+
+  const [session, setSession] = useState<Session | null>(null);
+  const userEmail = session?.user?.email ?? null;
 
   const [eventId, setEventId] = useState<string | null>(null);
   const [rows, setRows] = useState<SubmissionRow[]>([]);
@@ -88,7 +93,18 @@ export default function SpeakersClient() {
       const stored = window.localStorage.getItem("clawcon.speakers.view");
       if (stored === "list" || stored === "grid") setView(stored);
     } catch {}
+
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => setSession(newSession),
+    );
+
+    return () => authListener.subscription.unsubscribe();
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   useEffect(() => {
     try {
@@ -149,169 +165,293 @@ export default function SpeakersClient() {
   }, [rows, q]);
 
   return (
-    <main style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <header style={{ marginBottom: 18 }}>
-        <div
-          style={{ display: "flex", justifyContent: "space-between", gap: 12 }}
-        >
-          <div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 6 }}>
-              Speakers
-            </h1>
-            <p style={{ color: "#4b5563", margin: 0 }}>
-              {city.label} · Profiles pulled from submitted demos/topics.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <Link href={withCity("/", city.key)} className="hn-button">
-              ← submissions
-            </Link>
-          </div>
-        </div>
-
-        <div
-          style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}
-        >
-          <button
-            className="hn-button"
-            onClick={() => setView("grid")}
-            disabled={view === "grid"}
-          >
-            Grid
-          </button>
-          <button
-            className="hn-button"
-            onClick={() => setView("list")}
-            disabled={view === "list"}
-          >
-            List
-          </button>
-          <input
-            className="input"
-            placeholder="Search speakers…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ minWidth: 220 }}
-          />
-        </div>
-
-        {notice && <div className="hn-notice">{notice}</div>}
-      </header>
-
-      <section>
-        {loading ? (
-          <p style={{ color: "#6b7280" }}>Loading…</p>
-        ) : speakers.length === 0 ? (
-          <p style={{ color: "#6b7280" }}>
-            No speakers yet for {city.label}. (Once demos are submitted,
-            presenters will appear here.)
-          </p>
-        ) : view === "list" ? (
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: 10 }}>
-            {speakers.map((sp, idx) => (
-              <div
-                key={sp.name}
-                style={{
-                  padding: 12,
-                  borderBottom:
-                    idx === speakers.length - 1 ? "none" : "1px solid #e5e7eb",
+    <>
+      <div className="hn-header">
+        <div className="hn-header-left">
+          <Link href={withCity("/", city.key)} className="hn-logo">
+            <span className="hn-logo-icon">🦞</span>
+            <span className="hn-logo-text">Claw Con</span>
+          </Link>
+          <nav className="hn-nav">
+            <label
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span style={{ color: "#000" }}>city</span>
+              <select
+                value={city.key}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const nextUrl = new URL(window.location.href);
+                  nextUrl.searchParams.set("city", next);
+                  router.push(
+                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
+                  );
                 }}
+                style={{ padding: "2px 6px" }}
+                aria-label="Select city"
               >
+                <option value="san-francisco">San Francisco</option>
+                <option value="denver">Denver</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="kona">Kona</option>
+              </select>
+            </label>
+            <span className="hn-nav-sep">|</span>
+
+            <a href={withCity("/", city.key)} className="hn-nav-link">
+              demos
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/", city.key)} className="hn-nav-link">
+              topics
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/events", city.key)} className="hn-nav-link">
+              events
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a
+              href={withCity("/speakers", city.key)}
+              className="hn-nav-link active"
+            >
+              speakers
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/sponsors", city.key)} className="hn-nav-link">
+              sponsors
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/photos", city.key)} className="hn-nav-link">
+              photos
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/livestream", city.key)} className="hn-nav-link">
+              livestream
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href="/skills" className="hn-nav-link">
+              skills
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/memes", city.key)} className="hn-nav-link">
+              memes
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a
+              href="https://t.me/clawcon"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
+              join telegram
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a
+              href="https://discord.gg/hhSCBayj"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
+              discord
+            </a>
+          </nav>
+
+          {userEmail && (
+            <div className="hn-user">
+              <button
+                className="hn-profile-button"
+                onClick={handleSignOut}
+                title={`Sign out (${userEmail})`}
+                aria-label="Sign out"
+              >
+                <span className="hn-profile" aria-hidden="true">
+                  {userEmail.trim().charAt(0).toUpperCase()}
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {notice && <div className="hn-notice">{notice}</div>}
+
+      <div className="hn-layout">
+        <main className="hn-main">
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <h2 style={{ margin: 0 }}>Speakers · {city.label}</h2>
+            <span style={{ color: "#6b7280", fontSize: 12 }}>
+              Profiles pulled from submitted demos/topics.
+            </span>
+          </div>
+
+          {loading ? (
+            <p style={{ color: "#6b7280" }}>Loading…</p>
+          ) : speakers.length === 0 ? (
+            <p style={{ color: "#6b7280" }}>
+              No speakers yet for {city.label}. (Once demos are submitted,
+              presenters will appear here.)
+            </p>
+          ) : view === "list" ? (
+            <table className="hn-table" style={{ marginTop: 12 }}>
+              <tbody>
+                {speakers.map((sp, idx) => (
+                  <tr key={sp.name} className="hn-row">
+                    <td className="hn-rank">{idx + 1}.</td>
+                    <td className="hn-content">
+                      <div className="hn-title-row">
+                        <span className="hn-title">{sp.name}</span>
+                      </div>
+                      <div className="hn-meta">
+                        <span>
+                          {sp.submissionCount} submission
+                          {sp.submissionCount === 1 ? "" : "s"}
+                        </span>
+                        {sp.links.length ? (
+                          <>
+                            {" "}
+                            <span>·</span>{" "}
+                            {sp.links.map((l) => (
+                              <a
+                                key={l}
+                                href={l}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ marginRight: 8 }}
+                              >
+                                {l.replace(/^https?:\/\//, "")}
+                              </a>
+                            ))}
+                          </>
+                        ) : null}
+                      </div>
+                      <div className="hn-meta" style={{ marginTop: 4 }}>
+                        {sp.submissions.map((s) => (
+                          <div key={s.id}>
+                            <Link href={`/post/${s.id}`} className="hn-link">
+                              {s.title}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              {speakers.map((sp) => (
                 <div
+                  key={sp.name}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    padding: 14,
+                    background: "#fff",
                   }}
                 >
-                  <div style={{ fontWeight: 800 }}>{sp.name}</div>
+                  <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                    {sp.name}
+                  </div>
                   <div style={{ color: "#6b7280", fontSize: 12 }}>
                     {sp.submissionCount} submission
                     {sp.submissionCount === 1 ? "" : "s"}
                   </div>
-                </div>
 
-                {sp.links.length ? (
-                  <div style={{ marginTop: 6, fontSize: 12 }}>
-                    {sp.links.map((l) => (
-                      <a
-                        key={l}
-                        href={l}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ marginRight: 10 }}
-                      >
-                        {l.replace(/^https?:\/\//, "")}
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div style={{ marginTop: 8, color: "#6b7280", fontSize: 12 }}>
-                  {sp.submissions.map((s) => (
-                    <div key={s.id}>
-                      <Link href={`/post/${s.id}`}>{s.title}</Link>
+                  {sp.links.length ? (
+                    <div
+                      style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5 }}
+                    >
+                      {sp.links.map((l) => (
+                        <div key={l}>
+                          <a href={l} target="_blank" rel="noreferrer">
+                            {l.replace(/^https?:\/\//, "")}
+                          </a>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 12,
-            }}
-          >
-            {speakers.map((sp) => (
-              <div
-                key={sp.name}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  padding: 14,
-                  background: "#fff",
-                }}
-              >
-                <div style={{ fontWeight: 900, marginBottom: 6 }}>
-                  {sp.name}
-                </div>
-                <div style={{ color: "#6b7280", fontSize: 12 }}>
-                  {sp.submissionCount} submission
-                  {sp.submissionCount === 1 ? "" : "s"}
-                </div>
+                  ) : null}
 
-                {sp.links.length ? (
-                  <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5 }}>
-                    {sp.links.map((l) => (
-                      <div key={l}>
-                        <a href={l} target="_blank" rel="noreferrer">
-                          {l.replace(/^https?:\/\//, "")}
-                        </a>
+                  <div
+                    style={{ marginTop: 10, color: "#6b7280", fontSize: 12 }}
+                  >
+                    {sp.submissions.map((s) => (
+                      <div key={s.id}>
+                        <Link href={`/post/${s.id}`}>{s.title}</Link>
                       </div>
                     ))}
                   </div>
-                ) : null}
-
-                <div style={{ marginTop: 10, color: "#6b7280", fontSize: 12 }}>
-                  {sp.submissions.map((s) => (
-                    <div key={s.id}>
-                      <Link href={`/post/${s.id}`}>{s.title}</Link>
-                    </div>
-                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        <div style={{ marginTop: 14, color: "#6b7280", fontSize: 12 }}>
-          Tip: this follows <code>?city=</code> and (when available) scopes to
-          the city’s configured <code>events.slug</code>.
-        </div>
-      </section>
-    </main>
+          <div style={{ marginTop: 14, color: "#6b7280", fontSize: 12 }}>
+            Tip: this follows <code>?city=</code> and (when available) scopes to
+            the city’s configured <code>events.slug</code>.
+          </div>
+        </main>
+
+        <aside className="hn-sidebar">
+          <div className="hn-sidebar-box">
+            <h3>Browse speakers</h3>
+            <div className="hn-form">
+              <label>
+                View
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    className="hn-button"
+                    type="button"
+                    onClick={() => setView("grid")}
+                    disabled={view === "grid"}
+                  >
+                    Grid
+                  </button>
+                  <button
+                    className="hn-button"
+                    type="button"
+                    onClick={() => setView("list")}
+                    disabled={view === "list"}
+                  >
+                    List
+                  </button>
+                </div>
+              </label>
+              <label>
+                Search
+                <input
+                  className="input"
+                  placeholder="Search speakers…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="hn-sidebar-box">
+            <h4>🎤 Speaker ideas</h4>
+            <ul className="hn-ideas">
+              <li>
+                Want to appear here?{" "}
+                <Link href={withCity("/", city.key)}>submit a demo</Link>.
+              </li>
+              <li>Add your GitHub or site in the submission links.</li>
+              <li>
+                Include a short bio in the description (we’ll promote later).
+              </li>
+            </ul>
+            <p className="hn-tip">We build profiles from what you submit.</p>
+          </div>
+        </aside>
+      </div>
+    </>
   );
 }
