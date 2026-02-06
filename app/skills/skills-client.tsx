@@ -163,30 +163,6 @@ export default function SkillsClient() {
           </nav>
 
           <div className="hn-header-right">
-            <label
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <span style={{ color: "#000" }}>city</span>
-              <select
-                value={city.key}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  const nextUrl = new URL(window.location.href);
-                  nextUrl.searchParams.set("city", next);
-                  router.push(
-                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
-                  );
-                }}
-                style={{ padding: "2px 6px" }}
-                aria-label="Select city"
-              >
-                <option value="san-francisco">San Francisco</option>
-                <option value="denver">Denver</option>
-                <option value="tokyo">Tokyo</option>
-                <option value="kona">Kona</option>
-              </select>
-            </label>
-
             {userEmail && (
               <div className="hn-user">
                 <button
@@ -206,6 +182,34 @@ export default function SkillsClient() {
       </div>
 
       {notice && <div className="hn-notice">{notice}</div>}
+
+      <div className="hn-city-rail" aria-label="City selector">
+        <div className="hn-city-rail-label">Cities</div>
+        <a
+          className={city.key === "san-francisco" ? "active" : ""}
+          href={withCity("/skills", "san-francisco")}
+        >
+          San Francisco
+        </a>
+        <a
+          className={city.key === "denver" ? "active" : ""}
+          href={withCity("/skills", "denver")}
+        >
+          Denver
+        </a>
+        <a
+          className={city.key === "tokyo" ? "active" : ""}
+          href={withCity("/skills", "tokyo")}
+        >
+          Tokyo
+        </a>
+        <a
+          className={city.key === "kona" ? "active" : ""}
+          href={withCity("/skills", "kona")}
+        >
+          Kona
+        </a>
+      </div>
 
       <div className="hn-layout">
         <main className="hn-main">

@@ -100,6 +100,47 @@ main.root {
   gap: 10px;
 }
 
+.hn-city-rail {
+  position: fixed;
+  top: 70px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+}
+
+.hn-city-rail-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 0 6px;
+}
+
+.hn-city-rail a {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hn-city-rail a.active {
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+@media (max-width: 900px) {
+  .hn-city-rail {
+    display: none;
+  }
+}
+
 .hn-user {
   font-size: 9pt;
   display: flex;
