@@ -7,22 +7,19 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 
-type AwardKind = "prize" | "grant" | "challenge" | "bounty";
-
-type AwardRow = {
+type JobRow = {
   id: string;
   created_at: string;
   city: string;
-  kind: AwardKind;
-  sponsor_name: string;
+  company: string;
   title: string;
-  description: string;
-  url: string | null;
-  amount: string | null;
+  location: string | null;
+  url: string;
+  compensation: string | null;
+  notes: string | null;
 };
 
 function safeUrl(input: string): string | null {
-  if (!input.trim()) return null;
   try {
     const u = new URL(input);
     if (u.protocol !== "https:") return null;
@@ -32,7 +29,7 @@ function safeUrl(input: string): string | null {
   }
 }
 
-export default function AwardsClient() {
+export default function JobsClient() {
   const searchParams = useSearchParams();
   const cityKey = searchParams.get("city") || DEFAULT_CITY_KEY;
   const city = getCity(cityKey);
@@ -57,17 +54,17 @@ export default function AwardsClient() {
     } catch {}
   }, [lang]);
 
-  const [rows, setRows] = useState<AwardRow[]>([]);
+  const [rows, setRows] = useState<JobRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [formKind, setFormKind] = useState<AwardKind>("prize");
-  const [formSponsor, setFormSponsor] = useState("");
+  const [formCompany, setFormCompany] = useState("");
   const [formTitle, setFormTitle] = useState("");
-  const [formAmount, setFormAmount] = useState("");
+  const [formLocation, setFormLocation] = useState("");
   const [formUrl, setFormUrl] = useState("");
-  const [formDescription, setFormDescription] = useState("");
+  const [formComp, setFormComp] = useState("");
+  const [formNotes, setFormNotes] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -81,32 +78,32 @@ export default function AwardsClient() {
     await supabase.auth.signOut();
   };
 
-  const fetchAwards = useCallback(async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     setNotice(null);
 
     const { data, error } = await supabase
-      .from("awards")
+      .from("jobs")
       .select(
-        "id,created_at,city,kind,sponsor_name,title,description,url,amount",
+        "id,created_at,city,company,title,location,url,compensation,notes",
       )
       .order("created_at", { ascending: false })
       .limit(200);
 
     if (error) {
       setRows([]);
-      setNotice("Awards database not configured yet (missing `awards` table).");
+      setNotice("Jobs database not configured yet (missing `jobs` table). ");
       setLoading(false);
       return;
     }
 
-    setRows((data as AwardRow[]) || []);
+    setRows((data as JobRow[]) || []);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchAwards();
-  }, [fetchAwards]);
+    fetchJobs();
+  }, [fetchJobs]);
 
   const filtered = useMemo(() => {
     const cityLabel = city.label;
@@ -142,14 +139,14 @@ export default function AwardsClient() {
               sponsors
             </a>
             <span className="hn-nav-sep">|</span>
-            <a
-              href={withCity("/awards", city.key)}
-              className="hn-nav-link active"
-            >
+            <a href={withCity("/awards", city.key)} className="hn-nav-link">
               awards
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/jobs", city.key)} className="hn-nav-link">
+            <a
+              href={withCity("/jobs", city.key)}
+              className="hn-nav-link active"
+            >
               jobs
             </a>
             <span className="hn-nav-sep">|</span>
@@ -217,25 +214,25 @@ export default function AwardsClient() {
         <div className="hn-city-rail-label">Cities</div>
         <a
           className={city.key === "san-francisco" ? "active" : ""}
-          href={withCity("/awards", "san-francisco")}
+          href={withCity("/jobs", "san-francisco")}
         >
           San Francisco
         </a>
         <a
           className={city.key === "denver" ? "active" : ""}
-          href={withCity("/awards", "denver")}
+          href={withCity("/jobs", "denver")}
         >
           Denver
         </a>
         <a
           className={city.key === "tokyo" ? "active" : ""}
-          href={withCity("/awards", "tokyo")}
+          href={withCity("/jobs", "tokyo")}
         >
           Tokyo
         </a>
         <a
           className={city.key === "kona" ? "active" : ""}
-          href={withCity("/awards", "kona")}
+          href={withCity("/jobs", "kona")}
         >
           Kona
         </a>
@@ -244,9 +241,9 @@ export default function AwardsClient() {
       <div className="hn-layout">
         <main className="hn-main">
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <h2 style={{ margin: 0 }}>Awards · {city.label}</h2>
+            <h2 style={{ margin: 0 }}>Jobs · {city.label}</h2>
             <span style={{ color: "#6b7280", fontSize: 12 }}>
-              Prizes, grants, challenges, and bounties.
+              Post jobs for the community.
             </span>
           </div>
 
@@ -254,36 +251,32 @@ export default function AwardsClient() {
             <p style={{ color: "#6b7280", marginTop: 12 }}>Loading…</p>
           ) : filtered.length === 0 ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>
-              No awards yet for {city.label}.
+              No jobs yet for {city.label}.
             </p>
           ) : (
             <table className="hn-table" style={{ marginTop: 12 }}>
               <tbody>
-                {filtered.map((a, idx) => (
-                  <tr key={a.id} className="hn-row">
+                {filtered.map((j, idx) => (
+                  <tr key={j.id} className="hn-row">
                     <td className="hn-rank">{idx + 1}.</td>
                     <td className="hn-content">
                       <div className="hn-title-row">
-                        {a.url ? (
-                          <a
-                            className="hn-title"
-                            href={a.url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {a.title}
-                          </a>
-                        ) : (
-                          <span className="hn-title">{a.title}</span>
-                        )}
-                        <span className="hn-domain">
-                          ({a.kind} · {a.sponsor_name})
-                        </span>
+                        <a
+                          className="hn-title"
+                          href={j.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {j.title}
+                        </a>
+                        <span className="hn-domain">({j.company})</span>
                       </div>
                       <div className="hn-meta">
-                        {a.amount ? <span>{a.amount}</span> : null}
-                        {a.amount ? " · " : ""}
-                        <span>{a.description}</span>
+                        {j.location ? <span>{j.location}</span> : null}
+                        {j.location ? " · " : ""}
+                        {j.compensation ? <span>{j.compensation}</span> : null}
+                        {j.compensation ? " · " : ""}
+                        {j.notes ? <span>{j.notes}</span> : null}
                       </div>
                     </td>
                   </tr>
@@ -295,11 +288,11 @@ export default function AwardsClient() {
 
         <aside className="hn-sidebar">
           <div className="hn-sidebar-box">
-            <h4>➕ Submit an award</h4>
+            <h4>➕ Submit a job</h4>
 
             {!session ? (
               <div className="hn-signin-prompt">
-                <p>Sign in on the submissions page to add awards.</p>
+                <p>Sign in on the submissions page to post jobs.</p>
                 <Link href={withCity("/", city.key)} className="hn-button">
                   Sign in
                 </Link>
@@ -311,34 +304,26 @@ export default function AwardsClient() {
                   e.preventDefault();
                   setNotice(null);
 
-                  if (!formSponsor.trim()) {
-                    setNotice("Sponsor name is required.");
-                    return;
-                  }
-                  if (!formTitle.trim()) {
-                    setNotice("Title is required.");
-                    return;
-                  }
-                  if (!formDescription.trim()) {
-                    setNotice("Description is required.");
+                  const u = safeUrl(formUrl.trim());
+                  if (!u) {
+                    setNotice("Job URL must be a valid https URL.");
                     return;
                   }
 
-                  const u = safeUrl(formUrl.trim());
-                  if (formUrl.trim() && !u) {
-                    setNotice("URL must be a valid https URL (or blank). ");
+                  if (!formCompany.trim() || !formTitle.trim()) {
+                    setNotice("Company and title are required.");
                     return;
                   }
 
                   setSubmitting(true);
-                  const { error } = await supabase.from("awards").insert({
+                  const { error } = await supabase.from("jobs").insert({
                     city: city.label,
-                    kind: formKind,
-                    sponsor_name: formSponsor.trim(),
+                    company: formCompany.trim(),
                     title: formTitle.trim(),
-                    description: formDescription.trim(),
+                    location: formLocation.trim() || null,
                     url: u,
-                    amount: formAmount.trim() || null,
+                    compensation: formComp.trim() || null,
+                    notes: formNotes.trim() || null,
                   });
                   setSubmitting(false);
 
@@ -347,36 +332,23 @@ export default function AwardsClient() {
                     return;
                   }
 
-                  setFormSponsor("");
+                  setFormCompany("");
                   setFormTitle("");
-                  setFormDescription("");
+                  setFormLocation("");
                   setFormUrl("");
-                  setFormAmount("");
-                  fetchAwards();
+                  setFormComp("");
+                  setFormNotes("");
+                  fetchJobs();
                 }}
               >
                 <label>
-                  Type
-                  <select
-                    className="input"
-                    value={formKind}
-                    onChange={(e) => setFormKind(e.target.value as AwardKind)}
-                  >
-                    <option value="prize">prize</option>
-                    <option value="grant">grant</option>
-                    <option value="challenge">challenge</option>
-                    <option value="bounty">bounty</option>
-                  </select>
-                </label>
-
-                <label>
-                  Sponsor name
+                  Company
                   <input
                     className="input"
                     type="text"
                     placeholder="Acme Co"
-                    value={formSponsor}
-                    onChange={(e) => setFormSponsor(e.target.value)}
+                    value={formCompany}
+                    onChange={(e) => setFormCompany(e.target.value)}
                     required
                   />
                 </label>
@@ -386,7 +358,7 @@ export default function AwardsClient() {
                   <input
                     className="input"
                     type="text"
-                    placeholder="Best demo"
+                    placeholder="Founding engineer"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     required
@@ -394,36 +366,47 @@ export default function AwardsClient() {
                 </label>
 
                 <label>
-                  Amount (optional)
+                  Location (optional)
                   <input
                     className="input"
                     type="text"
-                    placeholder="$500 / credits / hardware / etc"
-                    value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
+                    placeholder="SF / Remote"
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
                   />
                 </label>
 
                 <label>
-                  URL (optional)
+                  URL
                   <input
                     className="input"
                     type="text"
-                    placeholder="https://..."
+                    placeholder="https://jobs..."
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
+                    required
                   />
                 </label>
 
                 <label>
-                  Description
-                  <textarea
+                  Compensation (optional)
+                  <input
                     className="input"
-                    style={{ minHeight: 100, resize: "vertical" }}
-                    placeholder="What is it, eligibility, how to claim..."
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    required
+                    type="text"
+                    placeholder="$150k–$200k + equity"
+                    value={formComp}
+                    onChange={(e) => setFormComp(e.target.value)}
+                  />
+                </label>
+
+                <label>
+                  Notes (optional)
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Visa, stack, team size…"
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
                   />
                 </label>
 
@@ -436,7 +419,7 @@ export default function AwardsClient() {
                 </button>
 
                 <p className="hn-tip" style={{ margin: 0 }}>
-                  Keep it short + include how to claim.
+                  Use a link with a clear job description.
                 </p>
               </form>
             )}
@@ -445,13 +428,8 @@ export default function AwardsClient() {
           <div className="hn-sidebar-box">
             <h4>✅ Tips</h4>
             <ul className="hn-ideas">
-              <li>
-                Use <b>challenge</b> for a specific problem, <b>bounty</b> for a
-                reward per issue/PR.
-              </li>
-              <li>
-                If there’s a URL, link to rules / submission form / terms.
-              </li>
+              <li>Include location + remote/visa info if you can.</li>
+              <li>Use a stable URL (careers page or job post).</li>
             </ul>
           </div>
         </aside>

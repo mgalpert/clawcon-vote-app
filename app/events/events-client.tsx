@@ -261,6 +261,10 @@ export default function EventsClient() {
               awards
             </a>
             <span className="hn-nav-sep">|</span>
+            <a href={withCity("/jobs", city.key)} className="hn-nav-link">
+              jobs
+            </a>
+            <span className="hn-nav-sep">|</span>
             <a href={withCity("/photos", city.key)} className="hn-nav-link">
               photos
             </a>
