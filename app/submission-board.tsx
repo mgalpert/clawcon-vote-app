@@ -12,6 +12,8 @@ export default function SubmissionBoard() {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [cooldownEndsAt, setCooldownEndsAt] = useState<number | null>(null);
+  const [cooldownNow, setCooldownNow] = useState<number>(Date.now());
   const [voteLoading, setVoteLoading] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -134,14 +136,27 @@ export default function SubmissionBoard() {
     return () => observer.disconnect();
   }, [loadMore, hasMore]);
 
+  // Sign-in cooldown ticker (for resend UX)
+  useEffect(() => {
+    if (!cooldownEndsAt) return;
+    const t = setInterval(() => setCooldownNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [cooldownEndsAt]);
+
   const isBlockedEmail = (addr: string) => addr.toLowerCase().endsWith("@agentmail.to");
 
   const handleMagicLink = async (event: React.FormEvent) => {
     event.preventDefault();
     setNotice(null);
 
+    if (cooldownEndsAt && Date.now() < cooldownEndsAt) {
+      const secs = Math.ceil((cooldownEndsAt - Date.now()) / 1000);
+      setNotice(`Please wait ${secs}s before requesting another magic link.`);
+      return;
+    }
+
     if (isBlockedEmail(email)) {
-      setNotice("Please use a real email address (agentmail.to is blocked). ");
+      setNotice("Please use a real email address (agentmail.to is blocked).");
       return;
     }
 
@@ -159,7 +174,9 @@ export default function SubmissionBoard() {
       return;
     }
 
-    setNotice("Magic link sent — check your email.");
+    // 60s cooldown to prevent accidental spamming + provider rate limits
+    setCooldownEndsAt(Date.now() + 60_000);
+    setNotice("Magic link sent — check your email (and spam). You can resend in 60s.");
   };
 
   const handleSignOut = async () => {
@@ -309,8 +326,16 @@ export default function SubmissionBoard() {
                 required
                 autoFocus
               />
-              <button className="hn-button" type="submit" disabled={loading}>
-                {loading ? "Sending..." : "Send magic link"}
+              <button
+                className="hn-button"
+                type="submit"
+                disabled={loading || (cooldownEndsAt !== null && cooldownNow < cooldownEndsAt)}
+              >
+                {loading
+                  ? "Sending..."
+                  : cooldownEndsAt !== null && cooldownNow < cooldownEndsAt
+                    ? `Resend in ${Math.ceil((cooldownEndsAt - cooldownNow) / 1000)}s`
+                    : "Send magic link"}
               </button>
             </form>
           </div>
