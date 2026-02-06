@@ -265,10 +265,6 @@ export default function EventsClient() {
               livestream
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/chats", city.key)} className="hn-nav-link">
-              join the chat
-            </a>
-            <span className="hn-nav-sep">|</span>
             <a href="/skills" className="hn-nav-link">
               skills
             </a>
@@ -277,22 +273,8 @@ export default function EventsClient() {
               memes
             </a>
             <span className="hn-nav-sep">|</span>
-            <a
-              href="https://t.me/clawcon"
-              target="_blank"
-              rel="noreferrer"
-              className="hn-nav-link"
-            >
-              join telegram
-            </a>
-            <span className="hn-nav-sep">|</span>
-            <a
-              href="https://discord.gg/hhSCBayj"
-              target="_blank"
-              rel="noreferrer"
-              className="hn-nav-link"
-            >
-              discord
+            <a href={withCity("/chats", city.key)} className="hn-nav-link">
+              join the chat
             </a>
           </nav>
 

@@ -216,21 +216,10 @@ export default function ChatsClient() {
             </a>
             <span className="hn-nav-sep">|</span>
             <a
-              href="https://t.me/clawcon"
-              target="_blank"
-              rel="noreferrer"
-              className="hn-nav-link"
+              href={withCity("/chats", city.key)}
+              className="hn-nav-link active"
             >
-              join telegram
-            </a>
-            <span className="hn-nav-sep">|</span>
-            <a
-              href="https://discord.gg/hhSCBayj"
-              target="_blank"
-              rel="noreferrer"
-              className="hn-nav-link"
-            >
-              discord
+              join the chat
             </a>
           </nav>
 
