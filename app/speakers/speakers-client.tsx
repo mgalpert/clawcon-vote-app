@@ -197,7 +197,7 @@ export default function SpeakersClient() {
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
-              demos
+              projects
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
@@ -302,7 +302,7 @@ export default function SpeakersClient() {
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <h2 style={{ margin: 0 }}>Speakers · {city.label}</h2>
             <span style={{ color: "#6b7280", fontSize: 12 }}>
-              Profiles pulled from submitted demos/topics.
+              Profiles pulled from submitted projects/topics.
             </span>
           </div>
 
@@ -310,7 +310,7 @@ export default function SpeakersClient() {
             <p style={{ color: "#6b7280" }}>Loading…</p>
           ) : speakers.length === 0 ? (
             <p style={{ color: "#6b7280" }}>
-              No speakers yet for {city.label}. (Once demos are submitted,
+              No speakers yet for {city.label}. (Once projects are submitted,
               presenters will appear here.)
             </p>
           ) : view === "list" ? (

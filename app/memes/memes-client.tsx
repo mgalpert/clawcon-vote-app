@@ -180,7 +180,7 @@ export default function MemesClient() {
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
-              demos
+              projects
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
