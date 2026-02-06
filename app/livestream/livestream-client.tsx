@@ -460,13 +460,10 @@ export default function LivestreamClient() {
                   >
                     {submitting ? "Submitting..." : "Submit"}
                   </button>
-                  <a className="hn-button" href={mailtoHref}>
-                    Email Colin
-                  </a>
                 </div>
 
                 <p className="hn-tip" style={{ margin: 0 }}>
-                  Submit adds it to the site; email Colin to coordinate posting.
+                  Add the livestream link for this city.
                 </p>
               </form>
             )}
@@ -486,11 +483,7 @@ export default function LivestreamClient() {
                 </a>{" "}
                 for reliable streaming + recording.
               </li>
-              <li>
-                Coordinate with{" "}
-                <a href="mailto:colin@clawdcon.com">colin@clawdcon.com</a> to
-                get the link posted.
-              </li>
+              {/* removed */}
             </ul>
           </div>
         </aside>
