@@ -270,16 +270,8 @@ export default function EventsClient() {
               skills
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/molt", city.key)} className="hn-nav-link">
-              molt
-            </a>
-            <span className="hn-nav-sep">|</span>
-            <a href={withCity("/youarehere", city.key)} className="hn-nav-link">
-              you are here
-            </a>
-            <span className="hn-nav-sep">|</span>
-            <a href={withCity("/evolution", city.key)} className="hn-nav-link">
-              evolution
+            <a href={withCity("/memes", city.key)} className="hn-nav-link">
+              memes
             </a>
             <span className="hn-nav-sep">|</span>
             <a
