@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabaseClient";
 import type { Submission } from "../lib/types";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../lib/cities";
 import CitySelect from "./city-select";
+import MobileNav from "./mobile-nav";
 import { sanitizeLink, getDomain, timeAgo } from "../lib/utils";
 
 export default function SubmissionBoard() {
@@ -457,6 +458,8 @@ export default function SubmissionBoard() {
           </div>
 
           <CitySelect path="/" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/" />
+
           <nav className="hn-nav">
             <button
               className={`hn-nav-link ${activeTab === "speaker_demo" ? "active" : ""}`}

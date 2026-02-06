@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 type ViewMode = "grid" | "list";
 
@@ -175,6 +176,8 @@ export default function MemesClient() {
           </Link>
 
           <CitySelect path="/memes" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/memes" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos

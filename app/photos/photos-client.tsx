@@ -8,6 +8,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 // Placeholder: add mp4 URLs here as we collect them.
 const sfVideos: string[] = [];
@@ -106,6 +107,8 @@ export default function PhotosClient() {
           </Link>
 
           <CitySelect path="/photos" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/photos" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos

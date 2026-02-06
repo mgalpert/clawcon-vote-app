@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { CITIES, DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 type EventRow = {
   id: string;
@@ -284,6 +285,8 @@ export default function EventsClient() {
           </Link>
 
           <CitySelect path="/events" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/events" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos

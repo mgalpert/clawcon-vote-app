@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 
@@ -120,6 +121,8 @@ export default function PapersClient() {
           </Link>
 
           <CitySelect path="/papers" activeCityKey={city.key} />
+
+          <MobileNav cityKey={city.key} activePath="/papers" />
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">

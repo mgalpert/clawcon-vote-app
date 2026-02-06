@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 type ChatKind = "group" | "chatbot";
 
@@ -174,6 +175,8 @@ export default function ChatsClient() {
           </Link>
 
           <CitySelect path="/chats" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/chats" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos

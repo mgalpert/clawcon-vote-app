@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 type SponsorKind =
   | "in-kind"
@@ -271,6 +272,8 @@ export default function SponsorsClient() {
           </Link>
 
           <CitySelect path="/sponsors" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/sponsors" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos

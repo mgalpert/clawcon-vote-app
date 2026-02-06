@@ -69,6 +69,71 @@ main.root {
   gap: 6px;
 }
 
+/* Mobile hamburger / linktree */
+.hn-mobile-nav {
+  display: none;
+  position: relative;
+}
+
+.hn-mobile-nav-summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.hn-mobile-nav-summary::-webkit-details-marker {
+  display: none;
+}
+
+.hn-mobile-nav-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(320px, 90vw);
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 80;
+}
+
+.hn-linktree {
+  display: block;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  color: #111827;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.hn-linktree.active {
+  background: #ffedd5;
+  border-color: #fb923c;
+}
+
+@media (max-width: 720px) {
+  .hn-nav {
+    display: none;
+  }
+
+  .hn-mobile-nav {
+    display: inline-block;
+  }
+}
+
 .hn-nav-link {
   background: none;
   border: none;

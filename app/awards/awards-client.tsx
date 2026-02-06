@@ -7,6 +7,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 import CitySelect from "../city-select";
+import MobileNav from "../mobile-nav";
 
 type AwardKind = "prize" | "grant" | "challenge" | "bounty";
 
@@ -139,6 +140,8 @@ export default function AwardsClient() {
           </Link>
 
           <CitySelect path="/awards" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/awards" />
+
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos
