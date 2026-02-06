@@ -38,7 +38,7 @@ export default function PostPage() {
       .rpc("get_submissions_with_votes")
       .eq("id", postId)
       .single();
-    
+
     if (error || !data) {
       console.error("Failed to fetch submission:", error);
       return;
@@ -72,7 +72,7 @@ export default function PostPage() {
       (_event, newSession) => {
         setSession(newSession);
         if (newSession) setShowSignInModal(false);
-      }
+      },
     );
 
     Promise.all([fetchSubmission(), fetchComments()]).then(() => {
@@ -92,15 +92,17 @@ export default function PostPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/post/${postId}`
-      }
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/post/${postId}`,
+      },
     });
     setEmailLoading(false);
     if (error) {
       setNotice(error.message);
       return;
     }
-    setNotice("Check your inbox for your sign-in link ✨ (check spam if you don't see it!)");
+    setNotice(
+      "Check your inbox for your sign-in link ✨ (check spam if you don't see it!)",
+    );
     setShowSignInModal(false);
   };
 
@@ -112,7 +114,7 @@ export default function PostPage() {
     setNotice(null);
     setVoteLoading(true);
     const { error } = await supabase.from("votes").insert({
-      submission_id: postId
+      submission_id: postId,
     });
     setVoteLoading(false);
     if (error) {
@@ -133,21 +135,21 @@ export default function PostPage() {
       return;
     }
     if (!commentText.trim()) return;
-    
+
     setCommentSubmitting(true);
     const { error } = await supabase.from("comments").insert({
       submission_id: postId,
       user_id: session.user.id,
       author_email: session.user.email,
-      content: commentText.trim()
+      content: commentText.trim(),
     });
     setCommentSubmitting(false);
-    
+
     if (error) {
       setNotice(error.message);
       return;
     }
-    
+
     setCommentText("");
     fetchComments();
     fetchSubmission(); // Update comment count
@@ -190,7 +192,9 @@ export default function PostPage() {
           <div className="post-not-found">
             <h1>Post not found</h1>
             <p>This submission doesn't exist or has been removed.</p>
-            <Link href="/" className="hn-button">← Back to home</Link>
+            <Link href="/" className="hn-button">
+              ← Back to home
+            </Link>
           </div>
         </main>
       </div>
@@ -205,9 +209,17 @@ export default function PostPage() {
     <div className="post-page">
       {/* Sign-in Modal */}
       {showSignInModal && (
-        <div className="modal-overlay" onClick={() => setShowSignInModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowSignInModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowSignInModal(false)}>×</button>
+            <button
+              className="modal-close"
+              onClick={() => setShowSignInModal(false)}
+            >
+              ×
+            </button>
             <h2>Sign in to participate</h2>
             <p>We'll email you a one-click magic link. No password needed.</p>
             <form onSubmit={handleMagicLink} className="modal-form">
@@ -220,7 +232,11 @@ export default function PostPage() {
                 required
                 autoFocus
               />
-              <button className="hn-button" type="submit" disabled={emailLoading}>
+              <button
+                className="hn-button"
+                type="submit"
+                disabled={emailLoading}
+              >
                 {emailLoading ? "Sending..." : "Send magic link"}
               </button>
             </form>
@@ -235,20 +251,39 @@ export default function PostPage() {
             <span className="hn-logo-text">Claw Con</span>
           </Link>
           <nav className="hn-nav">
-            <Link href="/" className="hn-nav-link">demos</Link>
+            <Link href="/" className="hn-nav-link">
+              demos
+            </Link>
             <span className="hn-nav-sep">|</span>
-            <Link href="/?tab=topic" className="hn-nav-link">topics</Link>
+            <Link href="/?tab=topic" className="hn-nav-link">
+              topics
+            </Link>
             <span className="hn-nav-sep">|</span>
-            <a href="https://lu.ma/moltbot-sf-show-tell" target="_blank" rel="noreferrer" className="hn-nav-link">
+            <a
+              href="https://lu.ma/moltbot-sf-show-tell"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
               register
             </a>
             <span className="hn-nav-sep">|</span>
-            <Link href="/photos" className="hn-nav-link">photos</Link>
+            <Link href="/photos" className="hn-nav-link">
+              photos
+            </Link>
           </nav>
           {userEmail && (
             <div className="hn-user">
-              <span>{userEmail}</span>
-              <button className="hn-link" onClick={handleSignOut}>logout</button>
+              <button
+                className="hn-profile-button"
+                onClick={handleSignOut}
+                title={`Sign out (${userEmail})`}
+                aria-label="Sign out"
+              >
+                <span className="hn-profile" aria-hidden="true">
+                  {userEmail.trim().charAt(0).toUpperCase()}
+                </span>
+              </button>
             </div>
           )}
         </div>
@@ -284,16 +319,27 @@ export default function PostPage() {
               </h1>
               <div className="post-meta">
                 <span className="post-type-badge">
-                  {submission.submission_type === "speaker_demo" ? "🎬 Demo" : "💡 Topic"}
+                  {submission.submission_type === "speaker_demo"
+                    ? "🎬 Demo"
+                    : "💡 Topic"}
                 </span>
                 {submission.is_openclaw_contributor && (
-                  <span className="hn-badge contributor" title="OpenClaw Contributor">🦞</span>
+                  <span
+                    className="hn-badge contributor"
+                    title="OpenClaw Contributor"
+                  >
+                    🦞
+                  </span>
                 )}
                 {submission.links?.some((l) => l.includes("github.com")) && (
-                  <span className="hn-badge oss" title="Open Source">⭐</span>
+                  <span className="hn-badge oss" title="Open Source">
+                    ⭐
+                  </span>
                 )}
                 <span className="post-meta-sep">·</span>
-                <span>by <strong>{submission.presenter_name}</strong></span>
+                <span>
+                  by <strong>{submission.presenter_name}</strong>
+                </span>
                 {submission.created_at && (
                   <>
                     <span className="post-meta-sep">·</span>
@@ -307,7 +353,7 @@ export default function PostPage() {
           {/* Post body */}
           <div className="post-body">
             <p className="post-description">{submission.description}</p>
-            
+
             {submission.links && submission.links.length > 0 && (
               <div className="post-links">
                 <h3>Links</h3>
@@ -335,8 +381,10 @@ export default function PostPage() {
 
         {/* Comments section */}
         <section className="post-comments">
-          <h2>{comments.length} Comment{comments.length !== 1 ? "s" : ""}</h2>
-          
+          <h2>
+            {comments.length} Comment{comments.length !== 1 ? "s" : ""}
+          </h2>
+
           {/* Comment form */}
           {session ? (
             <form onSubmit={handleComment} className="post-comment-form">
@@ -357,7 +405,10 @@ export default function PostPage() {
             </form>
           ) : (
             <div className="post-signin-prompt">
-              <button className="hn-button" onClick={() => setShowSignInModal(true)}>
+              <button
+                className="hn-button"
+                onClick={() => setShowSignInModal(true)}
+              >
                 Sign in to comment
               </button>
             </div>
@@ -366,7 +417,9 @@ export default function PostPage() {
           {/* Comments list */}
           <div className="post-comment-list">
             {comments.length === 0 ? (
-              <p className="post-no-comments">No comments yet. Be the first to share your thoughts!</p>
+              <p className="post-no-comments">
+                No comments yet. Be the first to share your thoughts!
+              </p>
             ) : (
               comments.map((comment) => (
                 <div key={comment.id} className="post-comment">
@@ -389,7 +442,13 @@ export default function PostPage() {
       <footer className="hn-footer">
         <Link href="/">← Back to all submissions</Link>
         {" | "}
-        <a href="https://github.com/mgalpert/clawcon-vote-app" target="_blank" rel="noreferrer">Source</a>
+        <a
+          href="https://github.com/mgalpert/clawcon-vote-app"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Source
+        </a>
       </footer>
     </div>
   );

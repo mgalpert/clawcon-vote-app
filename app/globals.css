@@ -101,6 +101,32 @@ main.root {
   gap: 8px;
 }
 
+.hn-profile {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hn-profile-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hn-profile-button:hover .hn-profile {
+  background: rgba(255, 255, 255, 0.7);
+}
+
 /* Notice */
 .hn-notice {
   background: #ffffcc;

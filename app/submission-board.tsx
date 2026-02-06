@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import type { Submission } from "../lib/types";
+import { DEFAULT_CITY_KEY, getCity, withCity } from "../lib/cities";
 import { sanitizeLink, getDomain, timeAgo } from "../lib/utils";
 
 export default function SubmissionBoard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const cityKey = (searchParams.get("city") ||
+    DEFAULT_CITY_KEY) as typeof DEFAULT_CITY_KEY;
+  const city = getCity(cityKey);
+
+  const [eventId, setEventId] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
@@ -21,7 +31,9 @@ export default function SubmissionBoard() {
   const [formDescription, setFormDescription] = useState("");
   const [formPresenter, setFormPresenter] = useState("");
   const [formLinks, setFormLinks] = useState("");
-  const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">("speaker_demo");
+  const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">(
+    "speaker_demo",
+  );
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [displayCount, setDisplayCount] = useState(30);
   const [botKeyInfo, setBotKeyInfo] = useState<{
@@ -46,25 +58,57 @@ export default function SubmissionBoard() {
   }, [submissions]);
 
   const filteredSubmissions = useMemo(
-    () => sortedSubmissions.filter((item) => item.submission_type === activeTab),
-    [sortedSubmissions, activeTab]
+    () =>
+      sortedSubmissions.filter((item) => item.submission_type === activeTab),
+    [sortedSubmissions, activeTab],
   );
 
   const visibleSubmissions = useMemo(
     () => filteredSubmissions.slice(0, displayCount),
-    [filteredSubmissions, displayCount]
+    [filteredSubmissions, displayCount],
   );
 
   const hasMore = displayCount < filteredSubmissions.length;
 
-  const fetchSubmissions = async () => {
-    const { data, error } = await supabase.rpc("get_submissions_with_votes");
+  const fetchEvent = useCallback(async () => {
+    // Event scoping is optional; if events table isn't set up yet, we still allow browsing.
+    const { data, error } = await supabase
+      .from("events")
+      .select("id")
+      .eq("slug", city.eventSlug)
+      .maybeSingle();
+
     if (error) {
-      setNotice("We're having trouble loading submissions. Please try again soon.");
+      // Don’t hard-fail the page if events aren’t deployed yet.
+      setEventId(null);
       return;
     }
-    setSubmissions(data || []);
-  };
+
+    setEventId(data?.id ?? null);
+  }, [city.eventSlug]);
+
+  const fetchSubmissions = useCallback(async () => {
+    // Prefer the new event-scoped RPC. If the backend hasn't been migrated yet,
+    // fall back to the legacy no-arg RPC.
+    const scoped = await supabase.rpc("get_submissions_with_votes", {
+      _event_slug: city.eventSlug,
+    });
+
+    if (!scoped.error) {
+      setSubmissions((scoped.data as Submission[]) || []);
+      return;
+    }
+
+    const legacy = await supabase.rpc("get_submissions_with_votes");
+    if (legacy.error) {
+      setNotice(
+        "We're having trouble loading submissions. Please try again soon.",
+      );
+      return;
+    }
+
+    setSubmissions((legacy.data as Submission[]) || []);
+  }, [city.eventSlug]);
 
   const fetchBotKeyInfo = useCallback(async () => {
     if (!session?.user?.id) {
@@ -98,16 +142,17 @@ export default function SubmissionBoard() {
       (_event, newSession) => {
         setSession(newSession);
         if (newSession) setShowSignInModal(false);
-      }
+      },
     );
 
+    fetchEvent();
     fetchSubmissions();
 
     return () => {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchEvent, fetchSubmissions]);
 
   useEffect(() => {
     fetchBotKeyInfo();
@@ -128,7 +173,7 @@ export default function SubmissionBoard() {
           loadMore();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observer.observe(current);
@@ -143,7 +188,8 @@ export default function SubmissionBoard() {
     return () => clearInterval(t);
   }, [cooldownEndsAt]);
 
-  const isBlockedEmail = (addr: string) => addr.toLowerCase().endsWith("@agentmail.to");
+  const isBlockedEmail = (addr: string) =>
+    addr.toLowerCase().endsWith("@agentmail.to");
 
   const handleMagicLink = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -176,7 +222,9 @@ export default function SubmissionBoard() {
 
     // 60s cooldown to prevent accidental spamming + provider rate limits
     setCooldownEndsAt(Date.now() + 60_000);
-    setNotice("Magic link sent — check your email (and spam). You can resend in 60s.");
+    setNotice(
+      "Magic link sent — check your email (and spam). You can resend in 60s.",
+    );
   };
 
   const handleSignOut = async () => {
@@ -192,7 +240,9 @@ export default function SubmissionBoard() {
     setNotice(null);
     setVoteLoading(submissionId);
 
-    const { error } = await supabase.from("votes").insert({ submission_id: submissionId });
+    const { error } = await supabase
+      .from("votes")
+      .insert({ submission_id: submissionId });
 
     setVoteLoading(null);
 
@@ -232,7 +282,16 @@ export default function SubmissionBoard() {
       .map((l) => sanitizeLink(l))
       .filter((l): l is string => Boolean(l));
 
+    if (!eventId) {
+      setSubmitLoading(false);
+      setNotice(
+        `This event isn't configured yet for ${city.label}. (Missing event in DB: ${city.eventSlug})`,
+      );
+      return;
+    }
+
     const payload = {
+      event_id: eventId,
       title: formTitle.trim(),
       description: formDescription.trim(),
       presenter_name: formPresenter.trim() || "Anonymous",
@@ -270,8 +329,8 @@ export default function SubmissionBoard() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`
-      }
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
     const data = await response.json();
     setBotKeyLoading(false);
@@ -294,8 +353,8 @@ export default function SubmissionBoard() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`
-      }
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
     const data = await response.json();
     setBotKeyLoading(false);
@@ -311,9 +370,17 @@ export default function SubmissionBoard() {
     <>
       {/* Sign-in Modal */}
       {showSignInModal && (
-        <div className="modal-overlay" onClick={() => setShowSignInModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowSignInModal(false)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowSignInModal(false)}>×</button>
+            <button
+              className="modal-close"
+              onClick={() => setShowSignInModal(false)}
+            >
+              ×
+            </button>
             <h2>Sign in to vote</h2>
             <p>We'll email you a one-click magic link. No password needed.</p>
             <form onSubmit={handleMagicLink} className="modal-form">
@@ -329,7 +396,10 @@ export default function SubmissionBoard() {
               <button
                 className="hn-button"
                 type="submit"
-                disabled={loading || (cooldownEndsAt !== null && cooldownNow < cooldownEndsAt)}
+                disabled={
+                  loading ||
+                  (cooldownEndsAt !== null && cooldownNow < cooldownEndsAt)
+                }
               >
                 {loading
                   ? "Sending..."
@@ -350,56 +420,115 @@ export default function SubmissionBoard() {
             <span className="hn-logo-text">Claw Con</span>
           </div>
           <nav className="hn-nav">
+            <label
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span style={{ color: "#000" }}>city</span>
+              <select
+                value={city.key}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const nextUrl = new URL(window.location.href);
+                  nextUrl.searchParams.set("city", next);
+                  router.push(
+                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
+                  );
+                }}
+                style={{ padding: "2px 6px" }}
+                aria-label="Select city"
+              >
+                <option value="san-francisco">San Francisco</option>
+                <option value="denver">Denver</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="kona">Kona</option>
+              </select>
+            </label>
+            <span className="hn-nav-sep">|</span>
             <button
               className={`hn-nav-link ${activeTab === "speaker_demo" ? "active" : ""}`}
-              onClick={() => { setActiveTab("speaker_demo"); setDisplayCount(30); }}
+              onClick={() => {
+                setActiveTab("speaker_demo");
+                setDisplayCount(30);
+              }}
             >
               demos
             </button>
             <span className="hn-nav-sep">|</span>
             <button
               className={`hn-nav-link ${activeTab === "topic" ? "active" : ""}`}
-              onClick={() => { setActiveTab("topic"); setDisplayCount(30); }}
+              onClick={() => {
+                setActiveTab("topic");
+                setDisplayCount(30);
+              }}
             >
               topics
             </button>
-            <span className="hn-nav-sep">|</span>
-            <a href="https://lu.ma/moltbot-sf-show-tell" target="_blank" rel="noreferrer" className="hn-nav-link">
-              event page
+            <a href={withCity("/events", city.key)} className="hn-nav-link">
+              events
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="/sponsors" className="hn-nav-link">
+            <a href={withCity("/speakers", city.key)} className="hn-nav-link">
+              speakers
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/sponsors", city.key)} className="hn-nav-link">
               sponsors
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="/photos" className="hn-nav-link">
+            <a href={withCity("/photos", city.key)} className="hn-nav-link">
               photos
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="/molt" className="hn-nav-link">
+            <a href={withCity("/livestream", city.key)} className="hn-nav-link">
+              livestream
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href="/skills" className="hn-nav-link">
+              skills
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/molt", city.key)} className="hn-nav-link">
               molt
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="/youarehere" className="hn-nav-link">
+            <a href={withCity("/youarehere", city.key)} className="hn-nav-link">
               you are here
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="/evolution" className="hn-nav-link">
+            <a href={withCity("/evolution", city.key)} className="hn-nav-link">
               evolution
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="https://t.me/clawcon" target="_blank" rel="noreferrer" className="hn-nav-link">
+            <a
+              href="https://t.me/clawcon"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
               join telegram
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href="https://discord.gg/hhSCBayj" target="_blank" rel="noreferrer" className="hn-nav-link">
+            <a
+              href="https://discord.gg/hhSCBayj"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
               openclaw discord
             </a>
           </nav>
           {userEmail && (
             <div className="hn-user">
-              <span>{userEmail}</span>
-              <button className="hn-link" onClick={handleSignOut}>logout</button>
+              <button
+                className="hn-profile-button"
+                onClick={handleSignOut}
+                title={`Sign out (${userEmail})`}
+                aria-label="Sign out"
+              >
+                <span className="hn-profile" aria-hidden="true">
+                  {userEmail.trim().charAt(0).toUpperCase()}
+                </span>
+              </button>
             </div>
           )}
         </div>
@@ -438,37 +567,62 @@ export default function SubmissionBoard() {
                       </td>
                       <td className="hn-content">
                         <div className="hn-title-row">
-                          <Link href={`/post/${submission.id}`} className="hn-title">
+                          <Link
+                            href={`/post/${submission.id}`}
+                            className="hn-title"
+                          >
                             {submission.title}
                           </Link>
                           {domain && (
                             <span className="hn-domain">({domain})</span>
                           )}
                           {submission.is_openclaw_contributor && (
-                            <span className="hn-badge contributor" title="OpenClaw Contributor">🦞</span>
+                            <span
+                              className="hn-badge contributor"
+                              title="OpenClaw Contributor"
+                            >
+                              🦞
+                            </span>
                           )}
-                          {submission.links?.some((l) => l.includes("github.com")) && (
-                            <span className="hn-badge oss" title="Open Source">⭐</span>
+                          {submission.links?.some((l) =>
+                            l.includes("github.com"),
+                          ) && (
+                            <span className="hn-badge oss" title="Open Source">
+                              ⭐
+                            </span>
                           )}
                         </div>
                         <div className="hn-meta">
-                          <span className="hn-points">{submission.vote_count} point{submission.vote_count !== 1 ? "s" : ""}</span>
+                          <span className="hn-points">
+                            {submission.vote_count} point
+                            {submission.vote_count !== 1 ? "s" : ""}
+                          </span>
                           {" by "}
-                          <span className="hn-presenter">{submission.presenter_name}</span>
+                          <span className="hn-presenter">
+                            {submission.presenter_name}
+                          </span>
                           {submission.created_at && (
                             <>
                               {" "}
-                              <span className="hn-time">{timeAgo(submission.created_at)}</span>
+                              <span className="hn-time">
+                                {timeAgo(submission.created_at)}
+                              </span>
                             </>
                           )}
                           {" | "}
-                          <Link href={`/post/${submission.id}`} className="hn-link">
-                            {submission.comment_count || 0} comment{(submission.comment_count || 0) === 1 ? "" : "s"}
+                          <Link
+                            href={`/post/${submission.id}`}
+                            className="hn-link"
+                          >
+                            {submission.comment_count || 0} comment
+                            {(submission.comment_count || 0) === 1 ? "" : "s"}
                           </Link>
                           {submission.links && submission.links.length > 1 && (
                             <>
                               {" | "}
-                              <span className="hn-links-count">{submission.links.length} links</span>
+                              <span className="hn-links-count">
+                                {submission.links.length} links
+                              </span>
                             </>
                           )}
                         </div>
@@ -505,7 +659,11 @@ export default function SubmissionBoard() {
                   <input
                     className="input"
                     type="text"
-                    placeholder={activeTab === "speaker_demo" ? "Your demo name" : "Topic title"}
+                    placeholder={
+                      activeTab === "speaker_demo"
+                        ? "Your demo name"
+                        : "Topic title"
+                    }
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     required
@@ -523,7 +681,9 @@ export default function SubmissionBoard() {
                   />
                 </label>
                 <label>
-                  {activeTab === "speaker_demo" ? "Presenter" : "Lead (optional)"}
+                  {activeTab === "speaker_demo"
+                    ? "Presenter"
+                    : "Lead (optional)"}
                   <input
                     className="input"
                     type="text"
@@ -534,7 +694,8 @@ export default function SubmissionBoard() {
                   />
                 </label>
                 <label>
-                  Links {activeTab === "speaker_demo" ? "(required)" : "(optional)"}
+                  Links{" "}
+                  {activeTab === "speaker_demo" ? "(required)" : "(optional)"}
                   <input
                     className="input"
                     type="text"
@@ -544,14 +705,21 @@ export default function SubmissionBoard() {
                     required={activeTab === "speaker_demo"}
                   />
                 </label>
-                <button className="hn-button" type="submit" disabled={submitLoading}>
+                <button
+                  className="hn-button"
+                  type="submit"
+                  disabled={submitLoading}
+                >
                   {submitLoading ? "Submitting..." : "Submit"}
                 </button>
               </form>
             ) : (
               <div className="hn-signin-prompt">
                 <p>Sign in to submit a session.</p>
-                <button className="hn-button" onClick={() => setShowSignInModal(true)}>
+                <button
+                  className="hn-button"
+                  onClick={() => setShowSignInModal(true)}
+                >
                   Sign in
                 </button>
               </div>
@@ -560,7 +728,9 @@ export default function SubmissionBoard() {
 
           <div className="hn-sidebar-box">
             <h4>
-              {activeTab === "speaker_demo" ? "🎬 Demo ideas" : "💡 Topic ideas"}
+              {activeTab === "speaker_demo"
+                ? "🎬 Demo ideas"
+                : "💡 Topic ideas"}
             </h4>
             {activeTab === "speaker_demo" ? (
               <ul className="hn-ideas">
@@ -581,32 +751,50 @@ export default function SubmissionBoard() {
               </ul>
             )}
             <p className="hn-tip">
-              {activeTab === "speaker_demo"
-                ? <>Open source projects get priority! 🌟<br />OpenClaw contributors get +1000 points 🦞</>
-                : "Lead a discussion on any of these or propose your own."}
+              {activeTab === "speaker_demo" ? (
+                <>
+                  Open source projects get priority! 🌟
+                  <br />
+                  OpenClaw contributors get +1000 points 🦞
+                </>
+              ) : (
+                "Lead a discussion on any of these or propose your own."
+              )}
             </p>
           </div>
 
           <details className="hn-sidebar-box hn-api-box">
-            <summary><strong>🤖 Bot API</strong></summary>
+            <summary>
+              <strong>🤖 Bot API</strong>
+            </summary>
             <div className="hn-api-content">
               <h4>🔑 Bot key</h4>
-              <p>Keys are tied to your account and stored encrypted. Reveal or regenerate when needed.</p>
+              <p>
+                Keys are tied to your account and stored encrypted. Reveal or
+                regenerate when needed.
+              </p>
               {!session ? (
                 <div className="hn-signin-prompt">
                   <p>Sign in to manage your bot key.</p>
-                  <button className="hn-button small" onClick={() => setShowSignInModal(true)}>
+                  <button
+                    className="hn-button small"
+                    onClick={() => setShowSignInModal(true)}
+                  >
                     Sign in
                   </button>
                 </div>
               ) : (
                 <div className="hn-form">
                   {botKeyInfo ? (
-                    <p>Current key ends in <strong>{botKeyInfo.last4}</strong>.</p>
+                    <p>
+                      Current key ends in <strong>{botKeyInfo.last4}</strong>.
+                    </p>
                   ) : (
                     <p>No bot key yet.</p>
                   )}
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  <div
+                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+                  >
                     <button
                       className="hn-button small"
                       type="button"
@@ -632,8 +820,10 @@ export default function SubmissionBoard() {
                 </div>
               )}
 
-              <h4 style={{marginTop: "16px"}}>📡 Submit via API</h4>
-              <p>POST JSON to <code>/api/webhook</code> with your bot key:</p>
+              <h4 style={{ marginTop: "16px" }}>📡 Submit via API</h4>
+              <p>
+                POST JSON to <code>/api/webhook</code> with your bot key:
+              </p>
               <pre className="hn-code">{`POST /api/webhook
 Content-Type: application/json
 x-api-key: <BOT_KEY>
@@ -648,10 +838,13 @@ x-api-key: <BOT_KEY>
   "submitted_for_contact": "email",
   "links": ["https://github.com/..."]
 }`}</pre>
-              <p style={{marginTop: "8px"}}><code>submission_type</code>: <code>speaker_demo</code> or <code>topic</code></p>
+              <p style={{ marginTop: "8px" }}>
+                <code>submission_type</code>: <code>speaker_demo</code> or{" "}
+                <code>topic</code>
+              </p>
               <button
                 className="hn-button small"
-                style={{marginTop: "12px", width: "100%"}}
+                style={{ marginTop: "12px", width: "100%" }}
                 onClick={() => {
                   const agentPrompt = `# Claw Con Submission API
 
@@ -692,11 +885,22 @@ POST https://clawdcon.com/api/webhook
       </div>
 
       <footer className="hn-footer">
-        <a href="https://github.com/mgalpert/clawcon-vote-app" target="_blank" rel="noreferrer">Source</a>
+        <a href="https://github.com/clawcon" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+        {" | "}
+        <span>
+          Forked from{" "}
+          <a href="https://x.com/msg" target="_blank" rel="noreferrer">
+            @msg
+          </a>{" "}
+          by{" "}
+          <a href="https://x.com/dablclub" target="_blank" rel="noreferrer">
+            @colygon
+          </a>
+        </span>
         {" | "}
         <span>Orchestrated by Clawd</span>
-        {" | "}
-        <span>Tokens and gentle nudges by <a href="https://x.com/msg" target="_blank" rel="noreferrer">@msg</a></span>
       </footer>
     </>
   );

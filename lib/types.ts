@@ -8,6 +8,7 @@ export interface Comment {
 
 export interface Submission {
   id: string;
+  event_id?: string | null;
   title: string;
   description: string;
   presenter_name: string;
