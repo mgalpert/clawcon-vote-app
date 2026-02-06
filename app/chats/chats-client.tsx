@@ -7,31 +7,65 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 
-type ViewMode = "grid" | "list";
+type ChatKind = "group" | "chatbot";
 
-type LivestreamRow = {
+type PlatformKey =
+  | "telegram"
+  | "whatsapp"
+  | "signal"
+  | "discord"
+  | "line"
+  | "kakao"
+  | "wechat";
+
+type ChatRow = {
   id: string;
+  created_at: string;
   city: string;
-  title: string | null;
+  kind: ChatKind;
+  platform: PlatformKey;
+  name: string;
   url: string;
   notes: string | null;
-  created_at: string;
 };
 
-function safeUrl(s: string): string | null {
+function safeUrl(input: string): string | null {
   try {
-    const u = new URL(s);
+    const u = new URL(input);
     if (u.protocol !== "https:") return null;
-    if (u.username || u.password) return null;
     return u.toString();
   } catch {
     return null;
   }
 }
 
-export default function LivestreamClient() {
+const OFFICIAL_CHATS: Array<{
+  platform: PlatformKey;
+  kind: ChatKind;
+  name: string;
+  url: string;
+  notes?: string;
+}> = [
+  {
+    platform: "telegram",
+    kind: "group",
+    name: "Claw Con Telegram",
+    url: "https://t.me/clawcon",
+    notes: "Official community chat",
+  },
+  {
+    platform: "discord",
+    kind: "group",
+    name: "Claw Con Discord",
+    url: "https://discord.gg/hhSCBayj",
+    notes: "Official community chat",
+  },
+];
+
+export default function ChatsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const cityKey = searchParams.get("city") || DEFAULT_CITY_KEY;
   const city = getCity(cityKey);
 
@@ -55,6 +89,17 @@ export default function LivestreamClient() {
     } catch {}
   }, [lang]);
 
+  const [rows, setRows] = useState<ChatRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [formKind, setFormKind] = useState<ChatKind>("group");
+  const [formPlatform, setFormPlatform] = useState<PlatformKey>("telegram");
+  const [formName, setFormName] = useState("");
+  const [formUrl, setFormUrl] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -67,79 +112,56 @@ export default function LivestreamClient() {
     await supabase.auth.signOut();
   };
 
-  const defaultUrl = useMemo(
-    () => city.livestreamUrl || null,
-    [city.livestreamUrl],
-  );
-
-  const [view, setView] = useState<ViewMode>("grid");
-  const [items, setItems] = useState<LivestreamRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const [formTitle, setFormTitle] = useState("");
-  const [formUrl, setFormUrl] = useState("");
-  const [formNotes, setFormNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const mailtoHref = useMemo(() => {
-    const subject = `Claw Con livestream link (${city.label})`;
-    const bodyLines = [
-      `City: ${city.label}`,
-      `Title: ${formTitle.trim() || "(none)"}`,
-      `Livestream URL: ${formUrl.trim() || "(missing)"}`,
-      formNotes.trim() ? `Notes: ${formNotes.trim()}` : null,
-      "",
-      "Suggested setup: StreamYard (recording + easy sharing).",
-    ].filter(Boolean) as string[];
-
-    const body = bodyLines.join("\n");
-    return `mailto:colin@clawdcon.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }, [city.label, formNotes, formTitle, formUrl]);
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("clawcon.livestream.view");
-      if (stored === "list" || stored === "grid") setView(stored);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("clawcon.livestream.view", view);
-    } catch {}
-  }, [view]);
-
-  const fetchLivestreams = useCallback(async () => {
+  const fetchChats = useCallback(async () => {
     setLoading(true);
     setNotice(null);
 
     const { data, error } = await supabase
-      .from("livestreams")
-      .select("id,city,title,url,notes,created_at")
-      .eq("city", city.label)
-      .order("created_at", { ascending: false });
+      .from("chats")
+      .select("id,created_at,city,kind,platform,name,url,notes")
+      .order("created_at", { ascending: false })
+      .limit(200);
 
     if (error) {
-      setItems([]);
-      setNotice(
-        "Livestreams database not configured yet (missing `livestreams` table).",
-      );
+      setRows([]);
+      setNotice("Unable to load chats right now.");
       setLoading(false);
       return;
     }
 
-    setItems((data as LivestreamRow[]) || []);
+    setRows((data as ChatRow[]) || []);
     setLoading(false);
-  }, [city.label]);
+  }, []);
 
   useEffect(() => {
-    fetchLivestreams();
-  }, [fetchLivestreams]);
+    fetchChats();
+  }, [fetchChats]);
 
-  const hero = items[0] || null;
-  const heroUrl = hero?.url || defaultUrl;
-  const rest = items.slice(1);
+  const officialForCity = useMemo(
+    () => OFFICIAL_CHATS.map((c, idx) => ({ ...c, id: `official-${idx}` })),
+    [],
+  );
+
+  const filtered = useMemo(() => {
+    const cityLabel = city.label;
+    return rows.filter((r) => r.city === cityLabel);
+  }, [rows, city.label]);
+
+  const combined = useMemo(() => {
+    // Official chats always appear first.
+    const official = officialForCity.map((c) => ({
+      ...c,
+      created_at: "",
+      city: city.label,
+      notes: c.notes ?? null,
+    }));
+
+    const dedup = filtered.filter(
+      (r) => !official.some((o) => o.url === r.url),
+    );
+
+    return [...official, ...dedup];
+  }, [officialForCity, filtered, city.label]);
 
   return (
     <>
@@ -174,14 +196,14 @@ export default function LivestreamClient() {
               photos
             </a>
             <span className="hn-nav-sep">|</span>
-            <a
-              href={withCity("/livestream", city.key)}
-              className="hn-nav-link active"
-            >
+            <a href={withCity("/livestream", city.key)} className="hn-nav-link">
               livestream
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/chats", city.key)} className="hn-nav-link">
+            <a
+              href={withCity("/chats", city.key)}
+              className="hn-nav-link active"
+            >
               chats
             </a>
             <span className="hn-nav-sep">|</span>
@@ -249,29 +271,31 @@ export default function LivestreamClient() {
         </div>
       </div>
 
+      {notice && <div className="hn-notice">{notice}</div>}
+
       <div className="hn-city-rail" aria-label="City selector">
         <div className="hn-city-rail-label">Cities</div>
         <a
           className={city.key === "san-francisco" ? "active" : ""}
-          href={withCity("/livestream", "san-francisco")}
+          href={withCity("/chats", "san-francisco")}
         >
           San Francisco
         </a>
         <a
           className={city.key === "denver" ? "active" : ""}
-          href={withCity("/livestream", "denver")}
+          href={withCity("/chats", "denver")}
         >
           Denver
         </a>
         <a
           className={city.key === "tokyo" ? "active" : ""}
-          href={withCity("/livestream", "tokyo")}
+          href={withCity("/chats", "tokyo")}
         >
           Tokyo
         </a>
         <a
           className={city.key === "kona" ? "active" : ""}
-          href={withCity("/livestream", "kona")}
+          href={withCity("/chats", "kona")}
         >
           Kona
         </a>
@@ -280,153 +304,59 @@ export default function LivestreamClient() {
       <div className="hn-layout">
         <main className="hn-main">
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <h2 style={{ margin: 0 }}>Livestream · {city.label}</h2>
+            <h2 style={{ margin: 0 }}>Chats · {city.label}</h2>
             <span style={{ color: "#6b7280", fontSize: 12 }}>
-              Watch the stream/recording.
+              Group chats + chatbots.
             </span>
-          </div>
-
-          {notice && <div className="hn-notice">{notice}</div>}
-
-          {heroUrl ? (
-            <>
-              <div
-                style={{
-                  marginTop: 12,
-                  width: "100%",
-                  aspectRatio: "16 / 9",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  background: "#000",
-                }}
-              >
-                <iframe
-                  src={heroUrl}
-                  title={`Claw Con ${city.label} Livestream`}
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  style={{ width: "100%", height: "100%", border: 0 }}
-                />
-              </div>
-
-              <p style={{ marginTop: 12, color: "#6b7280" }}>
-                If the embed doesn’t load, open it here:{" "}
-                <a href={heroUrl} target="_blank" rel="noreferrer">
-                  {heroUrl}
-                </a>
-              </p>
-            </>
-          ) : (
-            <p style={{ marginTop: 12, color: "#6b7280" }}>
-              No livestreams yet for {city.label}.
-            </p>
-          )}
-
-          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-            <button
-              className="hn-button"
-              onClick={() => setView("grid")}
-              disabled={view === "grid"}
-            >
-              Grid
-            </button>
-            <button
-              className="hn-button"
-              onClick={() => setView("list")}
-              disabled={view === "list"}
-            >
-              List
-            </button>
           </div>
 
           {loading ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>Loading…</p>
-          ) : rest.length === 0 ? (
+          ) : combined.length === 0 ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>
-              No additional livestreams yet.
+              No chats yet for {city.label}.
             </p>
-          ) : view === "list" ? (
+          ) : (
             <table className="hn-table" style={{ marginTop: 12 }}>
               <tbody>
-                {rest.map((s, idx) => (
-                  <tr key={s.id} className="hn-row">
+                {combined.map((c, idx) => (
+                  <tr
+                    key={(c as any).id || `${c.url}-${idx}`}
+                    className="hn-row"
+                  >
                     <td className="hn-rank">{idx + 1}.</td>
                     <td className="hn-content">
                       <div className="hn-title-row">
                         <a
                           className="hn-title"
-                          href={s.url}
+                          href={c.url}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {s.title || "Livestream"}
+                          {c.name}
                         </a>
-                        <span className="hn-domain">({city.label})</span>
+                        <span className="hn-domain">
+                          ({c.platform} · {c.kind})
+                        </span>
                       </div>
-                      <div className="hn-meta">
-                        <span>{new Date(s.created_at).toLocaleString()}</span>
-                        {s.notes ? (
-                          <>
-                            {" "}
-                            · <span>{s.notes}</span>
-                          </>
-                        ) : null}
-                      </div>
+                      {c.notes ? (
+                        <div className="hn-meta">{c.notes}</div>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-                gap: 12,
-                marginTop: 12,
-              }}
-            >
-              {rest.map((s) => (
-                <a
-                  key={s.id}
-                  href={s.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 12,
-                    padding: 14,
-                    background: "#fff",
-                    textDecoration: "none",
-                    color: "inherit",
-                  }}
-                >
-                  <div style={{ fontWeight: 900, marginBottom: 6 }}>
-                    {s.title || "Livestream"}
-                  </div>
-                  <div style={{ color: "#6b7280", fontSize: 12 }}>
-                    {new Date(s.created_at).toLocaleString()}
-                  </div>
-                  {s.notes ? (
-                    <div
-                      style={{ color: "#111827", fontSize: 12, marginTop: 10 }}
-                    >
-                      {s.notes}
-                    </div>
-                  ) : null}
-                </a>
-              ))}
-            </div>
           )}
         </main>
 
         <aside className="hn-sidebar">
           <div className="hn-sidebar-box">
-            <h3>Submit a livestream</h3>
+            <h4>➕ Submit a chat</h4>
+
             {!session ? (
               <div className="hn-signin-prompt">
-                <p>Sign in on the submissions page to add livestreams.</p>
+                <p>Sign in on the submissions page to add chats.</p>
                 <Link href={withCity("/", city.key)} className="hn-button">
                   Sign in
                 </Link>
@@ -440,14 +370,21 @@ export default function LivestreamClient() {
 
                   const u = safeUrl(formUrl.trim());
                   if (!u) {
-                    setNotice("Livestream URL must be a valid https URL.");
+                    setNotice("Chat URL must be a valid https URL.");
+                    return;
+                  }
+
+                  if (!formName.trim()) {
+                    setNotice("Name is required.");
                     return;
                   }
 
                   setSubmitting(true);
-                  const { error } = await supabase.from("livestreams").insert({
+                  const { error } = await supabase.from("chats").insert({
                     city: city.label,
-                    title: formTitle.trim() || null,
+                    kind: formKind,
+                    platform: formPlatform,
+                    name: formName.trim(),
                     url: u,
                     notes: formNotes.trim() || null,
                   });
@@ -458,76 +395,98 @@ export default function LivestreamClient() {
                     return;
                   }
 
-                  setFormTitle("");
+                  setFormName("");
                   setFormUrl("");
                   setFormNotes("");
-                  fetchLivestreams();
+                  fetchChats();
                 }}
               >
                 <label>
-                  Title (optional)
+                  Type
+                  <select
+                    className="input"
+                    value={formKind}
+                    onChange={(e) => setFormKind(e.target.value as ChatKind)}
+                  >
+                    <option value="group">group chat</option>
+                    <option value="chatbot">chatbot</option>
+                  </select>
+                </label>
+
+                <label>
+                  Platform
+                  <select
+                    className="input"
+                    value={formPlatform}
+                    onChange={(e) =>
+                      setFormPlatform(e.target.value as PlatformKey)
+                    }
+                  >
+                    <option value="telegram">telegram</option>
+                    <option value="discord">discord</option>
+                    <option value="whatsapp">whatsapp</option>
+                    <option value="signal">signal</option>
+                    <option value="line">line</option>
+                    <option value="kakao">kakao</option>
+                    <option value="wechat">wechat</option>
+                  </select>
+                </label>
+
+                <label>
+                  Name
                   <input
                     className="input"
                     type="text"
-                    placeholder="Claw Con SF stream"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Claw Con SF Chat"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    required
                   />
                 </label>
+
                 <label>
-                  Livestream URL
+                  URL
                   <input
                     className="input"
                     type="text"
-                    placeholder="https://streamyard.com/watch/..."
+                    placeholder="https://..."
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
                     required
                   />
                 </label>
+
                 <label>
                   Notes (optional)
                   <input
                     className="input"
                     type="text"
-                    placeholder="Time, host, agenda, etc."
+                    placeholder="What is it for?"
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
                   />
                 </label>
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    className="hn-button"
-                    type="submit"
-                    disabled={submitting}
-                  >
-                    {submitting ? "Submitting..." : "Submit"}
-                  </button>
-                </div>
+                <button
+                  className="hn-button"
+                  type="submit"
+                  disabled={submitting}
+                >
+                  {submitting ? "Submitting..." : "Submit"}
+                </button>
 
                 <p className="hn-tip" style={{ margin: 0 }}>
-                  Add the livestream link for this city.
+                  Add a group chat link or a chatbot link.
                 </p>
               </form>
             )}
           </div>
 
           <div className="hn-sidebar-box">
-            <h4>✅ Suggestions</h4>
+            <h4>✅ Tips</h4>
             <ul className="hn-ideas">
-              <li>
-                Use{" "}
-                <a
-                  href="https://streamyard.com"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  StreamYard
-                </a>{" "}
-                for reliable streaming + recording.
-              </li>
-              {/* removed */}
+              <li>Use a permanent invite link if possible.</li>
+              <li>Only submit chats you trust—these links will be public.</li>
             </ul>
           </div>
         </aside>
