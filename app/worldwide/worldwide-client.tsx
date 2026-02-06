@@ -130,7 +130,7 @@ export default function WorldwideClient() {
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
-              projects
+              demos
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
@@ -243,7 +243,7 @@ export default function WorldwideClient() {
               type="button"
               onClick={() => setActiveTab("speaker_demo")}
             >
-              projects
+              demos
             </button>
             <button
               className={`hn-button ${activeTab === "topic" ? "" : "ghost"}`}

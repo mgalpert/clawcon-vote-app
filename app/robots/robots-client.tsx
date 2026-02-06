@@ -108,7 +108,7 @@ export default function RobotsClient() {
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
-              projects
+              demos
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
@@ -253,7 +253,7 @@ export default function RobotsClient() {
 
             {!session ? (
               <div className="hn-signin-prompt">
-                <p>Sign in on the projects page to submit robots.</p>
+                <p>Sign in on the demos page to submit robots.</p>
                 <Link href={withCity("/", city.key)} className="hn-button">
                   Sign in
                 </Link>

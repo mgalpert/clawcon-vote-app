@@ -252,7 +252,7 @@ export default function PostPage() {
           </Link>
           <nav className="hn-nav">
             <Link href="/" className="hn-nav-link">
-              projects
+              demos
             </Link>
             <span className="hn-nav-sep">|</span>
             <Link href="/?tab=topic" className="hn-nav-link">

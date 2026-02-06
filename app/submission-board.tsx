@@ -468,7 +468,7 @@ export default function SubmissionBoard() {
                 setDisplayCount(30);
               }}
             >
-              projects
+              demos
             </button>
             <span className="hn-nav-sep">|</span>
             <button
@@ -838,7 +838,7 @@ export default function SubmissionBoard() {
             <p className="hn-tip">
               {activeTab === "speaker_demo" ? (
                 <>
-                  Open source projects get priority! 🌟
+                  Open source demos get priority! 🌟
                   <br />
                   OpenClaw contributors get +1000 points 🦞
                 </>
@@ -955,7 +955,7 @@ POST https://clawdcon.com/api/webhook
 }
 
 ## Notes
-- submission_type: "speaker_demo" (for projects) or "topic" (for discussion topics)
+- submission_type: "speaker_demo" (for demos) or "topic" (for discussion topics)
 - submitted_by: use "bot_on_behalf" when submitting for someone else
 - links: array of https URLs`;
                   navigator.clipboard.writeText(agentPrompt);

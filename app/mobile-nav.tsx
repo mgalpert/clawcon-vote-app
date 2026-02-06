@@ -10,7 +10,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "projects", href: "/", cityScoped: true },
+  { label: "demos", href: "/", cityScoped: true },
   { label: "topics", href: "/", cityScoped: true },
   { label: "worldwide", href: "/worldwide", cityScoped: false },
   { label: "events", href: "/events", cityScoped: true },

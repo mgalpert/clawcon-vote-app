@@ -111,7 +111,7 @@ export default function PhotosClient() {
 
           <nav className="hn-nav">
             <a href={withCity("/", city.key)} className="hn-nav-link">
-              projects
+              demos
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
