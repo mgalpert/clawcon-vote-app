@@ -30,6 +30,23 @@ export default function LivestreamClient() {
 
   const url = useMemo(() => city.livestreamUrl || null, [city.livestreamUrl]);
 
+  const [formUrl, setFormUrl] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+
+  const mailtoHref = useMemo(() => {
+    const subject = `Claw Con livestream link (${city.label})`;
+    const bodyLines = [
+      `City: ${city.label}`,
+      `Livestream URL: ${formUrl.trim() || "(missing)"}`,
+      formNotes.trim() ? `Notes: ${formNotes.trim()}` : null,
+      "",
+      "Suggested setup: StreamYard (recording + easy sharing).",
+    ].filter(Boolean) as string[];
+
+    const body = bodyLines.join("\n");
+    return `mailto:colin@clawdcon.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }, [city.label, formNotes, formUrl]);
+
   return (
     <>
       <div className="hn-header">
@@ -183,10 +200,64 @@ export default function LivestreamClient() {
 
         <aside className="hn-sidebar">
           <div className="hn-sidebar-box">
-            <h3>Add a livestream</h3>
-            <p style={{ margin: 0, color: "#6b7280", fontSize: 12 }}>
-              Coming soon: organizers can set the livestream URL per city.
-            </p>
+            <h3>Submit a livestream</h3>
+            <form
+              className="hn-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                window.location.href = mailtoHref;
+              }}
+            >
+              <label>
+                Livestream URL
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="https://streamyard.com/watch/..."
+                  value={formUrl}
+                  onChange={(e) => setFormUrl(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Notes (optional)
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Time, host, agenda, etc."
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                />
+              </label>
+              <button className="hn-button" type="submit">
+                Email Colin
+              </button>
+              <p className="hn-tip" style={{ margin: 0 }}>
+                This opens your email client to coordinate.
+              </p>
+            </form>
+          </div>
+
+          <div className="hn-sidebar-box">
+            <h4>✅ Suggestions</h4>
+            <ul className="hn-ideas">
+              <li>
+                Use{" "}
+                <a
+                  href="https://streamyard.com"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  StreamYard
+                </a>{" "}
+                for reliable streaming + recording.
+              </li>
+              <li>
+                Coordinate with{" "}
+                <a href="mailto:colin@clawdcon.com">colin@clawdcon.com</a> to
+                get the link posted.
+              </li>
+            </ul>
           </div>
         </aside>
       </div>
