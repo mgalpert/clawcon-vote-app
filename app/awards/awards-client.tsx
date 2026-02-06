@@ -2,34 +2,27 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
 
-type ChatKind = "group" | "chatbot";
+type AwardKind = "prize" | "grant" | "challenge" | "bounty";
 
-type PlatformKey =
-  | "telegram"
-  | "whatsapp"
-  | "signal"
-  | "discord"
-  | "line"
-  | "kakao"
-  | "wechat";
-
-type ChatRow = {
+type AwardRow = {
   id: string;
   created_at: string;
   city: string;
-  kind: ChatKind;
-  platform: PlatformKey;
-  name: string;
-  url: string;
-  notes: string | null;
+  kind: AwardKind;
+  sponsor_name: string;
+  title: string;
+  description: string;
+  url: string | null;
+  amount: string | null;
 };
 
 function safeUrl(input: string): string | null {
+  if (!input.trim()) return null;
   try {
     const u = new URL(input);
     if (u.protocol !== "https:") return null;
@@ -39,33 +32,8 @@ function safeUrl(input: string): string | null {
   }
 }
 
-const OFFICIAL_CHATS: Array<{
-  platform: PlatformKey;
-  kind: ChatKind;
-  name: string;
-  url: string;
-  notes?: string;
-}> = [
-  {
-    platform: "telegram",
-    kind: "group",
-    name: "Claw Con Telegram",
-    url: "https://t.me/clawcon",
-    notes: "Official community chat",
-  },
-  {
-    platform: "discord",
-    kind: "group",
-    name: "Claw Con Discord",
-    url: "https://discord.gg/hhSCBayj",
-    notes: "Official community chat",
-  },
-];
-
-export default function ChatsClient() {
-  const router = useRouter();
+export default function AwardsClient() {
   const searchParams = useSearchParams();
-
   const cityKey = searchParams.get("city") || DEFAULT_CITY_KEY;
   const city = getCity(cityKey);
 
@@ -89,16 +57,17 @@ export default function ChatsClient() {
     } catch {}
   }, [lang]);
 
-  const [rows, setRows] = useState<ChatRow[]>([]);
+  const [rows, setRows] = useState<AwardRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const [formKind, setFormKind] = useState<ChatKind>("group");
-  const [formPlatform, setFormPlatform] = useState<PlatformKey>("telegram");
-  const [formName, setFormName] = useState("");
+  const [formKind, setFormKind] = useState<AwardKind>("prize");
+  const [formSponsor, setFormSponsor] = useState("");
+  const [formTitle, setFormTitle] = useState("");
+  const [formAmount, setFormAmount] = useState("");
   const [formUrl, setFormUrl] = useState("");
-  const [formNotes, setFormNotes] = useState("");
+  const [formDescription, setFormDescription] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -112,56 +81,37 @@ export default function ChatsClient() {
     await supabase.auth.signOut();
   };
 
-  const fetchChats = useCallback(async () => {
+  const fetchAwards = useCallback(async () => {
     setLoading(true);
     setNotice(null);
 
     const { data, error } = await supabase
-      .from("chats")
-      .select("id,created_at,city,kind,platform,name,url,notes")
+      .from("awards")
+      .select(
+        "id,created_at,city,kind,sponsor_name,title,description,url,amount",
+      )
       .order("created_at", { ascending: false })
       .limit(200);
 
     if (error) {
       setRows([]);
-      setNotice("Unable to load chats right now.");
+      setNotice("Awards database not configured yet (missing `awards` table).");
       setLoading(false);
       return;
     }
 
-    setRows((data as ChatRow[]) || []);
+    setRows((data as AwardRow[]) || []);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchChats();
-  }, [fetchChats]);
-
-  const officialForCity = useMemo(
-    () => OFFICIAL_CHATS.map((c, idx) => ({ ...c, id: `official-${idx}` })),
-    [],
-  );
+    fetchAwards();
+  }, [fetchAwards]);
 
   const filtered = useMemo(() => {
     const cityLabel = city.label;
     return rows.filter((r) => r.city === cityLabel);
   }, [rows, city.label]);
-
-  const combined = useMemo(() => {
-    // Official chats always appear first.
-    const official = officialForCity.map((c) => ({
-      ...c,
-      created_at: "",
-      city: city.label,
-      notes: c.notes ?? null,
-    }));
-
-    const dedup = filtered.filter(
-      (r) => !official.some((o) => o.url === r.url),
-    );
-
-    return [...official, ...dedup];
-  }, [officialForCity, filtered, city.label]);
 
   return (
     <>
@@ -192,7 +142,10 @@ export default function ChatsClient() {
               sponsors
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/awards", city.key)} className="hn-nav-link">
+            <a
+              href={withCity("/awards", city.key)}
+              className="hn-nav-link active"
+            >
               awards
             </a>
             <span className="hn-nav-sep">|</span>
@@ -204,13 +157,6 @@ export default function ChatsClient() {
               livestream
             </a>
             <span className="hn-nav-sep">|</span>
-            <a
-              href={withCity("/chats", city.key)}
-              className="hn-nav-link active"
-            >
-              join the chat
-            </a>
-            <span className="hn-nav-sep">|</span>
             <a href="/skills" className="hn-nav-link">
               skills
             </a>
@@ -219,10 +165,7 @@ export default function ChatsClient() {
               memes
             </a>
             <span className="hn-nav-sep">|</span>
-            <a
-              href={withCity("/chats", city.key)}
-              className="hn-nav-link active"
-            >
+            <a href={withCity("/chats", city.key)} className="hn-nav-link">
               join the chat
             </a>
           </nav>
@@ -270,25 +213,25 @@ export default function ChatsClient() {
         <div className="hn-city-rail-label">Cities</div>
         <a
           className={city.key === "san-francisco" ? "active" : ""}
-          href={withCity("/chats", "san-francisco")}
+          href={withCity("/awards", "san-francisco")}
         >
           San Francisco
         </a>
         <a
           className={city.key === "denver" ? "active" : ""}
-          href={withCity("/chats", "denver")}
+          href={withCity("/awards", "denver")}
         >
           Denver
         </a>
         <a
           className={city.key === "tokyo" ? "active" : ""}
-          href={withCity("/chats", "tokyo")}
+          href={withCity("/awards", "tokyo")}
         >
           Tokyo
         </a>
         <a
           className={city.key === "kona" ? "active" : ""}
-          href={withCity("/chats", "kona")}
+          href={withCity("/awards", "kona")}
         >
           Kona
         </a>
@@ -297,44 +240,47 @@ export default function ChatsClient() {
       <div className="hn-layout">
         <main className="hn-main">
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <h2 style={{ margin: 0 }}>Chats · {city.label}</h2>
+            <h2 style={{ margin: 0 }}>Awards · {city.label}</h2>
             <span style={{ color: "#6b7280", fontSize: 12 }}>
-              Group chats + chatbots.
+              Prizes, grants, challenges, and bounties.
             </span>
           </div>
 
           {loading ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>Loading…</p>
-          ) : combined.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>
-              No chats yet for {city.label}.
+              No awards yet for {city.label}.
             </p>
           ) : (
             <table className="hn-table" style={{ marginTop: 12 }}>
               <tbody>
-                {combined.map((c, idx) => (
-                  <tr
-                    key={(c as any).id || `${c.url}-${idx}`}
-                    className="hn-row"
-                  >
+                {filtered.map((a, idx) => (
+                  <tr key={a.id} className="hn-row">
                     <td className="hn-rank">{idx + 1}.</td>
                     <td className="hn-content">
                       <div className="hn-title-row">
-                        <a
-                          className="hn-title"
-                          href={c.url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {c.name}
-                        </a>
+                        {a.url ? (
+                          <a
+                            className="hn-title"
+                            href={a.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {a.title}
+                          </a>
+                        ) : (
+                          <span className="hn-title">{a.title}</span>
+                        )}
                         <span className="hn-domain">
-                          ({c.platform} · {c.kind})
+                          ({a.kind} · {a.sponsor_name})
                         </span>
                       </div>
-                      {c.notes ? (
-                        <div className="hn-meta">{c.notes}</div>
-                      ) : null}
+                      <div className="hn-meta">
+                        {a.amount ? <span>{a.amount}</span> : null}
+                        {a.amount ? " · " : ""}
+                        <span>{a.description}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -345,11 +291,11 @@ export default function ChatsClient() {
 
         <aside className="hn-sidebar">
           <div className="hn-sidebar-box">
-            <h4>➕ Submit a chat</h4>
+            <h4>➕ Submit an award</h4>
 
             {!session ? (
               <div className="hn-signin-prompt">
-                <p>Sign in on the submissions page to add chats.</p>
+                <p>Sign in on the submissions page to add awards.</p>
                 <Link href={withCity("/", city.key)} className="hn-button">
                   Sign in
                 </Link>
@@ -361,25 +307,34 @@ export default function ChatsClient() {
                   e.preventDefault();
                   setNotice(null);
 
-                  const u = safeUrl(formUrl.trim());
-                  if (!u) {
-                    setNotice("Chat URL must be a valid https URL.");
+                  if (!formSponsor.trim()) {
+                    setNotice("Sponsor name is required.");
+                    return;
+                  }
+                  if (!formTitle.trim()) {
+                    setNotice("Title is required.");
+                    return;
+                  }
+                  if (!formDescription.trim()) {
+                    setNotice("Description is required.");
                     return;
                   }
 
-                  if (!formName.trim()) {
-                    setNotice("Name is required.");
+                  const u = safeUrl(formUrl.trim());
+                  if (formUrl.trim() && !u) {
+                    setNotice("URL must be a valid https URL (or blank). ");
                     return;
                   }
 
                   setSubmitting(true);
-                  const { error } = await supabase.from("chats").insert({
+                  const { error } = await supabase.from("awards").insert({
                     city: city.label,
                     kind: formKind,
-                    platform: formPlatform,
-                    name: formName.trim(),
+                    sponsor_name: formSponsor.trim(),
+                    title: formTitle.trim(),
+                    description: formDescription.trim(),
                     url: u,
-                    notes: formNotes.trim() || null,
+                    amount: formAmount.trim() || null,
                   });
                   setSubmitting(false);
 
@@ -388,10 +343,12 @@ export default function ChatsClient() {
                     return;
                   }
 
-                  setFormName("");
+                  setFormSponsor("");
+                  setFormTitle("");
+                  setFormDescription("");
                   setFormUrl("");
-                  setFormNotes("");
-                  fetchChats();
+                  setFormAmount("");
+                  fetchAwards();
                 }}
               >
                 <label>
@@ -399,64 +356,70 @@ export default function ChatsClient() {
                   <select
                     className="input"
                     value={formKind}
-                    onChange={(e) => setFormKind(e.target.value as ChatKind)}
+                    onChange={(e) => setFormKind(e.target.value as AwardKind)}
                   >
-                    <option value="group">group chat</option>
-                    <option value="chatbot">chatbot</option>
+                    <option value="prize">prize</option>
+                    <option value="grant">grant</option>
+                    <option value="challenge">challenge</option>
+                    <option value="bounty">bounty</option>
                   </select>
                 </label>
 
                 <label>
-                  Platform
-                  <select
-                    className="input"
-                    value={formPlatform}
-                    onChange={(e) =>
-                      setFormPlatform(e.target.value as PlatformKey)
-                    }
-                  >
-                    <option value="telegram">telegram</option>
-                    <option value="discord">discord</option>
-                    <option value="whatsapp">whatsapp</option>
-                    <option value="signal">signal</option>
-                    <option value="line">line</option>
-                    <option value="kakao">kakao</option>
-                    <option value="wechat">wechat</option>
-                  </select>
-                </label>
-
-                <label>
-                  Name
+                  Sponsor name
                   <input
                     className="input"
                     type="text"
-                    placeholder="Claw Con SF Chat"
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="Acme Co"
+                    value={formSponsor}
+                    onChange={(e) => setFormSponsor(e.target.value)}
                     required
                   />
                 </label>
 
                 <label>
-                  URL
+                  Title
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="Best demo"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Amount (optional)
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder="$500 / credits / hardware / etc"
+                    value={formAmount}
+                    onChange={(e) => setFormAmount(e.target.value)}
+                  />
+                </label>
+
+                <label>
+                  URL (optional)
                   <input
                     className="input"
                     type="text"
                     placeholder="https://..."
                     value={formUrl}
                     onChange={(e) => setFormUrl(e.target.value)}
-                    required
                   />
                 </label>
 
                 <label>
-                  Notes (optional)
-                  <input
+                  Description
+                  <textarea
                     className="input"
-                    type="text"
-                    placeholder="What is it for?"
-                    value={formNotes}
-                    onChange={(e) => setFormNotes(e.target.value)}
+                    style={{ minHeight: 100, resize: "vertical" }}
+                    placeholder="What is it, eligibility, how to claim..."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    required
                   />
                 </label>
 
@@ -469,7 +432,7 @@ export default function ChatsClient() {
                 </button>
 
                 <p className="hn-tip" style={{ margin: 0 }}>
-                  Add a group chat link or a chatbot link.
+                  Keep it short + include how to claim.
                 </p>
               </form>
             )}
@@ -478,8 +441,13 @@ export default function ChatsClient() {
           <div className="hn-sidebar-box">
             <h4>✅ Tips</h4>
             <ul className="hn-ideas">
-              <li>Use a permanent invite link if possible.</li>
-              <li>Only submit chats you trust—these links will be public.</li>
+              <li>
+                Use <b>challenge</b> for a specific problem, <b>bounty</b> for a
+                reward per issue/PR.
+              </li>
+              <li>
+                If there’s a URL, link to rules / submission form / terms.
+              </li>
             </ul>
           </div>
         </aside>

@@ -469,6 +469,10 @@ export default function SubmissionBoard() {
               sponsors
             </a>
             <span className="hn-nav-sep">|</span>
+            <a href={withCity("/awards", city.key)} className="hn-nav-link">
+              awards
+            </a>
+            <span className="hn-nav-sep">|</span>
             <a href={withCity("/photos", city.key)} className="hn-nav-link">
               photos
             </a>
