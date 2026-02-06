@@ -227,7 +227,7 @@ export default function ChatsClient() {
             <label
               style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              <span style={{ color: "#000" }}>lang</span>
+              {/* language */}
               <select
                 value={lang}
                 onChange={(e) => setLang(e.target.value)}
