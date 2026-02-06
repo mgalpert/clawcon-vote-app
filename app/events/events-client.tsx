@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
 import { DEFAULT_CITY_KEY, getCity, withCity } from "../../lib/cities";
@@ -63,11 +63,13 @@ function buildEventSlug(params: {
 }
 
 export default function EventsClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const cityKey = searchParams.get("city") || DEFAULT_CITY_KEY;
   const city = getCity(cityKey);
 
   const [session, setSession] = useState<Session | null>(null);
+  const userEmail = session?.user?.email ?? null;
   const [events, setEvents] = useState<EventRow[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,6 +154,10 @@ export default function EventsClient() {
 
   const canCreate = Boolean(session);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setNotice(null);
@@ -204,6 +210,39 @@ export default function EventsClient() {
             <span className="hn-logo-text">Claw Con</span>
           </Link>
           <nav className="hn-nav">
+            <label
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span style={{ color: "#000" }}>city</span>
+              <select
+                value={city.key}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const nextUrl = new URL(window.location.href);
+                  nextUrl.searchParams.set("city", next);
+                  router.push(
+                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
+                  );
+                }}
+                style={{ padding: "2px 6px" }}
+                aria-label="Select city"
+              >
+                <option value="san-francisco">San Francisco</option>
+                <option value="denver">Denver</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="kona">Kona</option>
+              </select>
+            </label>
+            <span className="hn-nav-sep">|</span>
+
+            <a href={withCity("/", city.key)} className="hn-nav-link">
+              demos
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/", city.key)} className="hn-nav-link">
+              topics
+            </a>
+            <span className="hn-nav-sep">|</span>
             <a
               href={withCity("/events", city.key)}
               className="hn-nav-link active"
@@ -211,10 +250,70 @@ export default function EventsClient() {
               events
             </a>
             <span className="hn-nav-sep">|</span>
-            <a href={withCity("/", city.key)} className="hn-nav-link">
-              submissions
+            <a href={withCity("/speakers", city.key)} className="hn-nav-link">
+              speakers
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/sponsors", city.key)} className="hn-nav-link">
+              sponsors
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/photos", city.key)} className="hn-nav-link">
+              photos
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/livestream", city.key)} className="hn-nav-link">
+              livestream
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href="/skills" className="hn-nav-link">
+              skills
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/molt", city.key)} className="hn-nav-link">
+              molt
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/youarehere", city.key)} className="hn-nav-link">
+              you are here
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/evolution", city.key)} className="hn-nav-link">
+              evolution
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a
+              href="https://t.me/clawcon"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
+              join telegram
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a
+              href="https://discord.gg/hhSCBayj"
+              target="_blank"
+              rel="noreferrer"
+              className="hn-nav-link"
+            >
+              openclaw discord
             </a>
           </nav>
+          {userEmail && (
+            <div className="hn-user">
+              <button
+                className="hn-profile-button"
+                onClick={handleSignOut}
+                title={`Sign out (${userEmail})`}
+                aria-label="Sign out"
+              >
+                <span className="hn-profile" aria-hidden="true">
+                  {userEmail.trim().charAt(0).toUpperCase()}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
