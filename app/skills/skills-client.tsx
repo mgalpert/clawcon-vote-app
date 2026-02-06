@@ -107,31 +107,6 @@ export default function SkillsClient() {
             <span className="hn-logo-text">Claw Con</span>
           </Link>
           <nav className="hn-nav">
-            <label
-              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              <span style={{ color: "#000" }}>city</span>
-              <select
-                value={city.key}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  const nextUrl = new URL(window.location.href);
-                  nextUrl.searchParams.set("city", next);
-                  router.push(
-                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
-                  );
-                }}
-                style={{ padding: "2px 6px" }}
-                aria-label="Select city"
-              >
-                <option value="san-francisco">San Francisco</option>
-                <option value="denver">Denver</option>
-                <option value="tokyo">Tokyo</option>
-                <option value="kona">Kona</option>
-              </select>
-            </label>
-            <span className="hn-nav-sep">|</span>
-
             <a href={withCity("/", city.key)} className="hn-nav-link">
               demos
             </a>
@@ -187,20 +162,46 @@ export default function SkillsClient() {
             </a>
           </nav>
 
-          {userEmail && (
-            <div className="hn-user">
-              <button
-                className="hn-profile-button"
-                onClick={handleSignOut}
-                title={`Sign out (${userEmail})`}
-                aria-label="Sign out"
+          <div className="hn-header-right">
+            <label
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <span style={{ color: "#000" }}>city</span>
+              <select
+                value={city.key}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  const nextUrl = new URL(window.location.href);
+                  nextUrl.searchParams.set("city", next);
+                  router.push(
+                    `${nextUrl.pathname}?${nextUrl.searchParams.toString()}`,
+                  );
+                }}
+                style={{ padding: "2px 6px" }}
+                aria-label="Select city"
               >
-                <span className="hn-profile" aria-hidden="true">
-                  {userEmail.trim().charAt(0).toUpperCase()}
-                </span>
-              </button>
-            </div>
-          )}
+                <option value="san-francisco">San Francisco</option>
+                <option value="denver">Denver</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="kona">Kona</option>
+              </select>
+            </label>
+
+            {userEmail && (
+              <div className="hn-user">
+                <button
+                  className="hn-profile-button"
+                  onClick={handleSignOut}
+                  title={`Sign out (${userEmail})`}
+                  aria-label="Sign out"
+                >
+                  <span className="hn-profile" aria-hidden="true">
+                    {userEmail.trim().charAt(0).toUpperCase()}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
