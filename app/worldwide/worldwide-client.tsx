@@ -124,7 +124,7 @@ export default function WorldwideClient() {
             <span className="hn-logo-text">Claw Con</span>
           </Link>
 
-          <CitySelect path="/worldwide" activeCityKey={city.key} />
+          <CitySelect path="/" activeCityKey="worldwide" />
 
           <MobileNav cityKey={city.key} activePath="/worldwide" />
 
@@ -135,10 +135,6 @@ export default function WorldwideClient() {
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/", city.key)} className="hn-nav-link">
               topics
-            </a>
-            <span className="hn-nav-sep">|</span>
-            <a href="/worldwide" className="hn-nav-link active">
-              worldwide
             </a>
             <span className="hn-nav-sep">|</span>
             <a href={withCity("/events", city.key)} className="hn-nav-link">

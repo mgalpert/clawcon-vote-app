@@ -16,11 +16,16 @@ export default function CitySelect(props: {
         value={props.activeCityKey}
         onChange={(e) => {
           const next = e.target.value;
+          if (next === "worldwide") {
+            router.push("/worldwide");
+            return;
+          }
           router.push(withCity(props.path, next as any));
         }}
         style={{ padding: "2px 6px" }}
         aria-label="Select city"
       >
+        <option value="worldwide">Worldwide</option>
         {CITIES.map((c) => (
           <option key={c.key} value={c.key}>
             {c.label}
