@@ -59,6 +59,21 @@ export default function JobsClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [view, setView] = useState<"list" | "grid">("list");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("clawcon.jobs.view");
+      if (stored === "list" || stored === "grid") setView(stored);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("clawcon.jobs.view", view);
+    } catch {}
+  }, [view]);
+
   const [formCompany, setFormCompany] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formLocation, setFormLocation] = useState("");
@@ -247,13 +262,30 @@ export default function JobsClient() {
             </span>
           </div>
 
+          <div style={{ margin: "10px 0 12px", display: "flex", gap: 8 }}>
+            <button
+              className="hn-button"
+              onClick={() => setView("list")}
+              disabled={view === "list"}
+            >
+              List
+            </button>
+            <button
+              className="hn-button"
+              onClick={() => setView("grid")}
+              disabled={view === "grid"}
+            >
+              Grid
+            </button>
+          </div>
+
           {loading ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>Loading…</p>
           ) : filtered.length === 0 ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>
               No jobs yet for {city.label}.
             </p>
-          ) : (
+          ) : view === "list" ? (
             <table className="hn-table" style={{ marginTop: 12 }}>
               <tbody>
                 {filtered.map((j, idx) => (
@@ -283,6 +315,52 @@ export default function JobsClient() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              {filtered.map((j) => (
+                <a
+                  key={j.id}
+                  href={j.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    padding: 14,
+                    background: "#fff",
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
+                >
+                  <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                    {j.title}
+                  </div>
+                  <div style={{ color: "#6b7280", fontSize: 12 }}>
+                    {j.company}
+                    {j.location ? ` · ${j.location}` : ""}
+                    {j.compensation ? ` · ${j.compensation}` : ""}
+                  </div>
+                  {j.notes ? (
+                    <div
+                      style={{
+                        color: "#111827",
+                        fontSize: 12,
+                        marginTop: 10,
+                      }}
+                    >
+                      {j.notes}
+                    </div>
+                  ) : null}
+                </a>
+              ))}
+            </div>
           )}
         </main>
 

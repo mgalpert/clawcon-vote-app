@@ -62,6 +62,21 @@ export default function AwardsClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [view, setView] = useState<"list" | "grid">("list");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("clawcon.awards.view");
+      if (stored === "list" || stored === "grid") setView(stored);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("clawcon.awards.view", view);
+    } catch {}
+  }, [view]);
+
   const [formKind, setFormKind] = useState<AwardKind>("prize");
   const [formSponsor, setFormSponsor] = useState("");
   const [formTitle, setFormTitle] = useState("");
@@ -250,13 +265,30 @@ export default function AwardsClient() {
             </span>
           </div>
 
+          <div style={{ margin: "10px 0 12px", display: "flex", gap: 8 }}>
+            <button
+              className="hn-button"
+              onClick={() => setView("list")}
+              disabled={view === "list"}
+            >
+              List
+            </button>
+            <button
+              className="hn-button"
+              onClick={() => setView("grid")}
+              disabled={view === "grid"}
+            >
+              Grid
+            </button>
+          </div>
+
           {loading ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>Loading…</p>
           ) : filtered.length === 0 ? (
             <p style={{ color: "#6b7280", marginTop: 12 }}>
               No awards yet for {city.label}.
             </p>
-          ) : (
+          ) : view === "list" ? (
             <table className="hn-table" style={{ marginTop: 12 }}>
               <tbody>
                 {filtered.map((a, idx) => (
@@ -290,6 +322,51 @@ export default function AwardsClient() {
                 ))}
               </tbody>
             </table>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              {filtered.map((a) => (
+                <div
+                  key={a.id}
+                  style={{
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 12,
+                    padding: 14,
+                    background: "#fff",
+                  }}
+                >
+                  <div style={{ fontWeight: 900, marginBottom: 6 }}>
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        {a.title}
+                      </a>
+                    ) : (
+                      a.title
+                    )}
+                  </div>
+                  <div style={{ color: "#6b7280", fontSize: 12 }}>
+                    {a.kind} · {a.sponsor_name}
+                    {a.amount ? ` · ${a.amount}` : ""}
+                  </div>
+                  <div
+                    style={{ color: "#111827", fontSize: 12, marginTop: 10 }}
+                  >
+                    {a.description}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </main>
 
