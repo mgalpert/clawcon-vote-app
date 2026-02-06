@@ -32,6 +32,12 @@ export default function SubmissionBoard() {
   const [formDescription, setFormDescription] = useState("");
   const [formPresenter, setFormPresenter] = useState("");
   const [formLinks, setFormLinks] = useState("");
+
+  // Social (for speaker profile)
+  const [formWebsite, setFormWebsite] = useState("");
+  const [formGithub, setFormGithub] = useState("");
+  const [formX, setFormX] = useState("");
+  const [formLinkedIn, setFormLinkedIn] = useState("");
   const [activeTab, setActiveTab] = useState<"speaker_demo" | "topic">(
     "speaker_demo",
   );
@@ -293,12 +299,20 @@ export default function SubmissionBoard() {
     setNotice(null);
     setSubmitLoading(true);
 
-    const links = formLinks
-      .split(",")
-      .map((s) => s.trim())
+    const links = [
+      ...formLinks
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      formWebsite.trim(),
+      formGithub.trim(),
+      formX.trim(),
+      formLinkedIn.trim(),
+    ]
       .filter(Boolean)
       .map((l) => sanitizeLink(l))
-      .filter((l): l is string => Boolean(l));
+      .filter((l): l is string => Boolean(l))
+      .filter((l, i, a) => a.indexOf(l) === i);
 
     if (!eventId) {
       setSubmitLoading(false);
@@ -331,6 +345,10 @@ export default function SubmissionBoard() {
     setFormDescription("");
     setFormPresenter("");
     setFormLinks("");
+    setFormWebsite("");
+    setFormGithub("");
+    setFormX("");
+    setFormLinkedIn("");
 
     setNotice("Submitted!");
     fetchSubmissions();
@@ -707,17 +725,68 @@ export default function SubmissionBoard() {
                   />
                 </label>
                 <label>
-                  Links{" "}
+                  Project links{" "}
                   {activeTab === "speaker_demo" ? "(required)" : "(optional)"}
                   <input
                     className="input"
                     type="text"
-                    placeholder="https://github.com/..."
+                    placeholder="https://github.com/... , https://..."
                     value={formLinks}
                     onChange={(e) => setFormLinks(e.target.value)}
                     required={activeTab === "speaker_demo"}
                   />
                 </label>
+
+                <details>
+                  <summary style={{ cursor: "pointer", color: "#6b7280" }}>
+                    Social links (for your profile)
+                  </summary>
+                  <div className="hn-form" style={{ marginTop: 10 }}>
+                    <label>
+                      Website (optional)
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="https://your-site.com"
+                        value={formWebsite}
+                        onChange={(e) => setFormWebsite(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      GitHub (optional)
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="https://github.com/yourhandle"
+                        value={formGithub}
+                        onChange={(e) => setFormGithub(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      X (optional)
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="https://x.com/yourhandle"
+                        value={formX}
+                        onChange={(e) => setFormX(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      LinkedIn (optional)
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="https://www.linkedin.com/in/you"
+                        value={formLinkedIn}
+                        onChange={(e) => setFormLinkedIn(e.target.value)}
+                      />
+                    </label>
+                    <p className="hn-tip" style={{ margin: 0 }}>
+                      Must be full <code>https://</code> URLs.
+                    </p>
+                  </div>
+                </details>
                 <button
                   className="hn-button"
                   type="submit"
