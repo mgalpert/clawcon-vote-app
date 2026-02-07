@@ -1,8 +1,12 @@
-# ClawCon Vote App — PRD (Rebuild From Scratch)
+# ClawCon in OpenClaw Gateway — PRD (Fork + Rebuild)
 
 Last updated: 2026-02-07
 
-This PRD describes the current **Claw Con** “submit + vote” webapp (Next.js + Supabase), including pages, API routes, database functions/policies, and how the flows work. Goal: enable a clean rebuild while preserving behavior.
+This PRD describes how to rebuild the ClawCon “submit + vote” experience **inside a fork of OpenClaw**, by upgrading/extending the **OpenClaw Gateway Dashboard UI**.
+
+Instead of a standalone Next.js site, ClawCon becomes a set of **Gateway dashboard views** reachable from the left sidebar. Each ClawCon section is a first-class **`nav-item`** alongside existing Gateway sections.
+
+The goal is to preserve the current functional behavior (submissions, voting, comments, bot submissions, public read-only logs) while adopting the Gateway dashboard layout, theme, and navigation model.
 
 ---
 
@@ -32,22 +36,41 @@ A lightweight, public website where attendees can:
 
 ## 2) Tech stack + architecture
 
-### Frontend
-- Next.js App Router (React)
-- Client-side Supabase JS for auth + reads/writes
-- Styling: “Hacker News-ish” theme (global CSS)
+### Frontend (OpenClaw Gateway Dashboard fork)
+- Use the existing **OpenClaw Gateway dashboard** app shell:
+  - Left sidebar navigation groups
+  - `nav-item` links
+  - Topbar chrome + theme system
+- Add a new sidebar group (or extend an existing group) named **ClawCon** with nav-items:
+  - **Demos** (nav-item)
+  - **Topics** (nav-item)
+  - **Speakers** (nav-item)
+  - **Sponsors** (nav-item)
+  - (optional parity items: Events, Robots, Papers, Awards, Jobs, Photos, Livestream, Memes, Chats, Worldwide, Logs)
+
+Implementation detail (UI):
+- Each section is a routed **dashboard view** (panel/page) consistent with the Gateway UI.
+- Match Gateway tokens/typography/radius/shadows; do not reintroduce HN CSS.
 
 ### Backend
+Primary backend remains **Supabase Postgres** (same schema + RPC approach), unless replaced.
+
 - Supabase Postgres
-- Supabase Auth (magic link / OTP)
-- Next.js Route Handlers for privileged server actions:
+- Supabase Auth (magic link / OTP) *or* OpenClaw/Gateway auth bridging (decision)
+- Privileged server actions run from the Gateway backend/runtime (not Next.js route handlers):
   - bot key reveal/regenerate (service role)
   - webhook submission (service role)
   - ClawHub sync (service role)
 
 ### Key design pattern
-- Public browsing uses **RLS “select true”** on certain tables and/or **security definer RPCs**.
-- Writes (submissions/votes/comments) require **authenticated** users.
+- Anonymous/public browsing uses **security definer RPCs** and/or RLS policies that explicitly allow safe reads.
+- Writes (submissions/votes/comments) require authenticated identity.
+
+### Open questions / decisions for the fork
+- Where will the dashboard run (local-only, hosted, or both)?
+- What is the auth model?
+  - Option A: keep Supabase OTP auth inside the dashboard
+  - Option B: map Gateway identity → Supabase user (SSO-like)
 
 ---
 
@@ -145,70 +168,83 @@ Both are `security definer` and granted to `anon, authenticated`.
 
 ---
 
-## 5) Pages (routes) and behavior
+## 5) Dashboard views (routes) and behavior
 
-All pages are in `app/**/page.tsx`.
+In the OpenClaw fork, these are **Gateway dashboard routes/views** (not Next.js `app/**/page.tsx`). The view names below are functional equivalents.
 
-### 5.1 Home `/`
-File: `app/page.tsx` → renders `SubmissionBoard`.
+### 5.1 ClawCon → Demos (nav-item)
+**Dashboard route:** `/clawcon/demos` (suggested)
 
-Component: `app/submission-board.tsx`
+Functional equivalent of the old Home page’s “demos” tab.
+
 Key behaviors:
-- Reads `city` from query param; defaults to `DEFAULT_CITY_KEY`.
-- Fetches `events.id` by `events.slug = city.eventSlug`.
-- Fetches submissions via RPC:
-  - prefers `get_submissions_with_votes(_event_slug)`
+- City context is taken from the Gateway’s global selector/state (or URL param). Default: `DEFAULT_CITY_KEY`.
+- Resolve `eventId` by `events.slug = city.eventSlug`.
+- Fetch submissions via RPC:
+  - prefer `get_submissions_with_votes(_event_slug)`
   - fallback to legacy `get_submissions_with_votes()`
-- Sorts by:
+- Sort/pin behavior (parity):
   1) GitHub link present (boost)
   2) vote_count desc
-- Filters by tabs:
-  - `speaker_demo` (“demos”)
-  - `topic` (“topics”)
-- Infinite scroll increments `displayCount`.
+- Filter to `submission_type = speaker_demo`.
+- Pagination/infinite scroll optional (keep if easy).
 
 Auth:
-- Sign-in modal with magic link (Supabase OTP)
-- Voting requires session; inserts into `votes`
-- Submission requires session; inserts into `submissions` with `event_id`
+- If unauthenticated: show “Sign in to vote/submit” (use existing Gateway auth UX if available, or Supabase OTP modal).
+- Vote: insert into `votes`.
+- Submit: insert into `submissions` with `event_id`.
 
-Bot key management UI:
-- Shows `bot_keys_public` info
-- Buttons call server routes:
-  - `POST /api/bot-key/reveal`
-  - `POST /api/bot-key/regenerate`
+Bot key management (optional placement):
+- Either keep in a “Bot API” card within Demos, or move to a separate Gateway settings panel.
+- Reveal/regenerate are privileged operations.
 
-### 5.2 Post detail `/post/[id]`
-File: `app/post/[id]/page.tsx`
+### 5.2 ClawCon → Topics (nav-item)
+**Dashboard route:** `/clawcon/topics`
+
+Same as Demos, but filter `submission_type = topic` and adjust submission form fields.
+
+### 5.3 ClawCon → Item detail (shared)
+**Dashboard route:** `/clawcon/item/:id` (suggested)
+
+Functional equivalent of `/post/[id]`.
+
 Behaviors:
-- Fetch submission: calls `rpc("get_submissions_with_votes")` and filters by `id`.
-- Fetch comments: selects from `comments` table (expects migration applied).
-- Vote: inserts into `votes`.
-- Comment: inserts into `comments`.
-- Sign-in modal uses magic link redirect back to this post.
+- Fetch submission: use the `get_submissions_with_votes` RPC and select by `id`.
+- Fetch comments: select from `comments` (expects migration applied).
+- Vote: insert into `votes`.
+- Comment: insert into `comments`.
+- If unauthenticated, prompt sign-in.
 
-### 5.3 Category pages (submissions-based)
-Pattern: each category uses `SubmissionsPage` abstraction.
+### 5.5 ClawCon → Sponsors (nav-item)
+**Dashboard route:** `/clawcon/sponsors`
 
-Shared component: `app/_shared/submissions-page.tsx`
-Used by:
-- `/robots` (`robots-client.tsx` uses custom list+form; not SubmissionsPage)
-- `/papers` (SubmissionsPage)
-- `/sponsors` (SubmissionsPage)
-- `/awards` (SubmissionsPage)
-- `/jobs` (SubmissionsPage)
-- `/skills` (SubmissionsPage)
-- `/memes` (SubmissionsPage)
-- `/chats` (SubmissionsPage)
-- `/livestream` (SubmissionsPage)
+Behaviors (parity):
+- Submission type: `sponsor`
+- List sponsors (scoped to event)
+- Authenticated users can submit
+- Optional votes (keep vote support consistent across submission types)
 
-SubmissionsPage behaviors:
-- Uses city param and resolves `eventId`.
-- Loads items via event-scoped RPC when available.
-- Falls back to direct `submissions` query (vote_count=0).
-- Voting requires session (inserts vote).
-- Submitting requires session (inserts submission payload from `buildInsert`).
-- Has its own top header + nav and uses `CitySelect` + `MobileNav`.
+### 5.6 Other ClawCon sections (optional parity)
+These can remain accessible from the left nav (either under ClawCon group or general):
+- Events
+- Robots
+- Papers
+- Awards
+- Jobs
+- Photos
+- Livestream
+- Skills
+- Memes
+- Chats
+- Worldwide
+- Logs
+
+Implementation approach:
+- Prefer a single reusable “SubmissionsView” component (Gateway style) with:
+  - list (sort by vote_count then time)
+  - vote action
+  - submit form schema per type
+  - city/event scoping
 
 ### 5.4 Events `/events`
 File: `app/events/page.tsx` + `events-client.tsx`
@@ -218,11 +254,21 @@ Behaviors:
 - Authenticated users can submit new events (insert to `events`).
 - Slug is computed from category/city/month/year.
 
-### 5.5 Speakers `/speakers`
-File: `app/speakers/page.tsx` + `speakers-client.tsx`
+### 5.4 ClawCon → Speakers (nav-item)
+**Dashboard route:** `/clawcon/speakers`
+
 Behaviors:
-- Loads submissions (scoped by event_id if available) and groups into speakers.
-- Shows counts and recent submissions.
+- Load submissions scoped to the active `event_id` (or via event-scoped RPC).
+- Group by `presenter_name`.
+- Show:
+  - speaker name
+  - submission count
+  - latest activity
+  - a few recent submissions
+  - a few unique links
+
+Notes:
+- Speakers is a derived view, not a separate table.
 
 ### 5.6 Worldwide `/worldwide`
 File: `app/worldwide/page.tsx` + `worldwide-client.tsx`
@@ -250,7 +296,9 @@ Behaviors:
 
 ---
 
-## 6) API routes (server)
+## 6) Server endpoints (Gateway backend)
+
+In the OpenClaw fork, these are implemented in the Gateway server/runtime (not Next.js route handlers). The behavior should remain the same.
 
 ### 6.1 `POST /api/webhook`
 File: `app/api/webhook/route.ts`
@@ -380,6 +428,15 @@ Server (sensitive):
 ---
 
 ## 11) Appendix: Route inventory
+
+### Gateway nav-items (minimum requested)
+Add these to the left sidebar as `nav-item`s:
+- ClawCon → Demos
+- ClawCon → Topics
+- ClawCon → Speakers
+- ClawCon → Sponsors
+
+(Everything else can be a second phase or remain as separate nav-items.)
 
 Static pages:
 - `/molt`
