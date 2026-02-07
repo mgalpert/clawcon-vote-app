@@ -12,19 +12,17 @@
      Each brand just remaps these values.
   */
 
-  /* defaults = OpenClaw Gateway dashboard (dark)
-     Source: /opt/homebrew/lib/node_modules/clawdbot/dist/control-ui/assets/index-*.css
-  */
-  --oc-bg: #12141a; /* --bg */
-  --oc-surface: #181b22; /* --card */
-  --oc-surface-2: #1a1d25; /* --bg-elevated */
-  --oc-border: #27272a; /* --border */
-  --oc-text: #e4e4e7; /* --text */
-  --oc-muted: #71717a; /* --muted */
-  --oc-accent: #ff5c5c; /* --accent */
-  --oc-accent-2: #14b8a6; /* --accent-2 */
-  --oc-danger: #ef4444; /* --danger */
-  --oc-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  /* defaults = OpenClaw dark-ish */
+  --oc-bg: #0b0f19;
+  --oc-surface: #0f172a;
+  --oc-surface-2: #111c33;
+  --oc-border: rgba(148, 163, 184, 0.18);
+  --oc-text: #e5e7eb;
+  --oc-muted: rgba(229, 231, 235, 0.65);
+  --oc-accent: #ff6a00;
+  --oc-accent-2: #22c55e;
+  --oc-danger: #ef4444;
+  --oc-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 
   /* Legacy HN tokens (still used by some components) */
   --hn-bg: var(--oc-bg);
@@ -44,8 +42,8 @@
    ------------------------------------------------------------ */
 :root[data-brand="openclaw"],
 :root:not([data-brand]) {
-  /* OpenClaw brand doesn't need overrides; base tokens already match.
-     Keep this block so we can specialize later if needed. */
+  --oc-accent: #ff6a00;
+  --oc-accent-2: #22c55e;
 }
 
 :root[data-brand="ops"] {
@@ -86,20 +84,18 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    /* OpenClaw Gateway dashboard (light) */
-    --oc-bg: #fafafa; /* --bg */
-    --oc-surface: #ffffff; /* --card */
-    --oc-surface-2: #f5f5f5; /* --bg-accent */
-    --oc-border: #e4e4e7; /* --border */
-    --oc-text: #18181b; /* --text-strong */
-    --oc-muted: #71717a; /* --muted */
-    --oc-accent: #dc2626; /* --accent */
-    --oc-accent-2: #0d9488; /* --accent-2 */
-    --oc-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
+    /* OpenClaw light */
+    --oc-bg: #f8fafc;
+    --oc-surface: #ffffff;
+    --oc-surface-2: #f1f5f9;
+    --oc-border: rgba(15, 23, 42, 0.12);
+    --oc-text: #0f172a;
+    --oc-muted: rgba(15, 23, 42, 0.6);
+    --oc-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
 
-    --hn-bg: var(--oc-bg);
+    --hn-bg: #f8fafc;
     --hn-link: var(--oc-text);
-    --hn-link-visited: rgba(24, 24, 27, 0.55);
+    --hn-link-visited: rgba(15, 23, 42, 0.55);
     --hn-meta: var(--oc-muted);
   }
 
@@ -148,19 +144,17 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --oc-bg: #fafafa;
+  --oc-bg: #f8fafc;
   --oc-surface: #ffffff;
-  --oc-surface-2: #f5f5f5;
-  --oc-border: #e4e4e7;
-  --oc-text: #18181b;
-  --oc-muted: #71717a;
-  --oc-accent: #dc2626;
-  --oc-accent-2: #0d9488;
-  --oc-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
+  --oc-surface-2: #f1f5f9;
+  --oc-border: rgba(15, 23, 42, 0.12);
+  --oc-text: #0f172a;
+  --oc-muted: rgba(15, 23, 42, 0.6);
+  --oc-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
 
-  --hn-bg: var(--oc-bg);
+  --hn-bg: #f8fafc;
   --hn-link: var(--oc-text);
-  --hn-link-visited: rgba(24, 24, 27, 0.55);
+  --hn-link-visited: rgba(15, 23, 42, 0.55);
   --hn-meta: var(--oc-muted);
 }
 
