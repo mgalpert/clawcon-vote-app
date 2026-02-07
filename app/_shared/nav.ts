@@ -6,7 +6,8 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Submissions", href: "/", cityScoped: true, icon: "🦞" },
+  { label: "Demos", href: "/", cityScoped: true, icon: "🎬" },
+  { label: "Topics", href: "/?tab=topic", cityScoped: true, icon: "💡" },
   { label: "Events", href: "/events", cityScoped: true, icon: "📅" },
   { label: "Speakers", href: "/speakers", cityScoped: true, icon: "🎤" },
   { label: "Robots", href: "/robots", cityScoped: true, icon: "🤖" },
