@@ -24,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "skills", href: "/skills", cityScoped: false },
   { label: "memes", href: "/memes", cityScoped: true },
   { label: "join the chat", href: "/chats", cityScoped: true },
+  { label: "logs", href: "/logs", cityScoped: true },
 ];
 
 export default function MobileNav(props: {
