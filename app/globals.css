@@ -4,15 +4,7 @@
   /* System theme by default (no data-theme) */
   color-scheme: light dark;
 
-  /* Brand + theme tokens
-     - data-brand: openclaw | ops | punk | paper
-     - data-theme: light | dark (absence = system)
-
-     We keep “OC tokens” as the canonical names for the UI layer.
-     Each brand just remaps these values.
-  */
-
-  /* defaults = OpenClaw dark-ish */
+  /* OpenClaw-ish dashboard tokens (light) */
   --oc-bg: #0b0f19;
   --oc-surface: #0f172a;
   --oc-surface-2: #111c33;
@@ -25,66 +17,20 @@
   --oc-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 
   /* Legacy HN tokens (still used by some components) */
-  --hn-bg: var(--oc-bg);
+  --hn-bg: #0b0f19;
   --hn-header-bg: transparent;
   --hn-header-text: var(--oc-text);
   --hn-link: var(--oc-text);
   --hn-link-visited: rgba(229, 231, 235, 0.6);
-  --hn-meta: var(--oc-muted);
+  --hn-meta: rgba(229, 231, 235, 0.65);
   --hn-border: var(--oc-border);
   --hn-panel: var(--oc-surface);
   --hn-upvote: rgba(229, 231, 235, 0.55);
   --hn-upvote-hover: var(--oc-accent);
 }
 
-/* ------------------------------------------------------------
-   BRAND PRESETS (DARK)
-   ------------------------------------------------------------ */
-:root[data-brand="openclaw"],
-:root:not([data-brand]) {
-  --oc-accent: #ff6a00;
-  --oc-accent-2: #22c55e;
-}
-
-:root[data-brand="ops"] {
-  /* Conference Ops: calm slate/ink, subtle blue accent */
-  --oc-bg: #0b1220;
-  --oc-surface: #0e172a;
-  --oc-surface-2: #0b1b33;
-  --oc-border: rgba(148, 163, 184, 0.18);
-  --oc-text: #e6edf7;
-  --oc-muted: rgba(230, 237, 247, 0.62);
-  --oc-accent: #38bdf8; /* sky */
-  --oc-accent-2: #a3e635;
-}
-
-:root[data-brand="punk"] {
-  /* Clawd Punk: neon, higher contrast */
-  --oc-bg: #06070d;
-  --oc-surface: #0b0d18;
-  --oc-surface-2: #0f1024;
-  --oc-border: rgba(255, 255, 255, 0.10);
-  --oc-text: #f4f4ff;
-  --oc-muted: rgba(244, 244, 255, 0.64);
-  --oc-accent: #a855f7; /* purple */
-  --oc-accent-2: #22d3ee; /* cyan */
-}
-
-:root[data-brand="paper"] {
-  /* Paper/UI Lab: airy, but dark mode still looks “studio” */
-  --oc-bg: #0a0b10;
-  --oc-surface: #0f111a;
-  --oc-surface-2: #121726;
-  --oc-border: rgba(255, 255, 255, 0.10);
-  --oc-text: #f1f5f9;
-  --oc-muted: rgba(241, 245, 249, 0.65);
-  --oc-accent: #f97316; /* warm */
-  --oc-accent-2: #60a5fa; /* blue */
-}
-
 @media (prefers-color-scheme: light) {
   :root {
-    /* OpenClaw light */
     --oc-bg: #f8fafc;
     --oc-surface: #ffffff;
     --oc-surface-2: #f1f5f9;
@@ -97,43 +43,6 @@
     --hn-link: var(--oc-text);
     --hn-link-visited: rgba(15, 23, 42, 0.55);
     --hn-meta: var(--oc-muted);
-  }
-
-  :root[data-brand="ops"] {
-    --oc-bg: #f8fafc;
-    --oc-surface: #ffffff;
-    --oc-surface-2: #f1f5f9;
-    --oc-border: rgba(15, 23, 42, 0.12);
-    --oc-text: #0b1220;
-    --oc-muted: rgba(11, 18, 32, 0.6);
-    --oc-accent: #0ea5e9;
-    --oc-accent-2: #84cc16;
-    --oc-shadow: 0 20px 50px rgba(11, 18, 32, 0.10);
-  }
-
-  :root[data-brand="punk"] {
-    /* Punk light is intentionally less “paper”; still bright with neon */
-    --oc-bg: #fafafa;
-    --oc-surface: #ffffff;
-    --oc-surface-2: #f4f4ff;
-    --oc-border: rgba(17, 24, 39, 0.10);
-    --oc-text: #111827;
-    --oc-muted: rgba(17, 24, 39, 0.55);
-    --oc-accent: #a855f7;
-    --oc-accent-2: #06b6d4;
-    --oc-shadow: 0 20px 50px rgba(17, 24, 39, 0.10);
-  }
-
-  :root[data-brand="paper"] {
-    --oc-bg: #fbfbfd;
-    --oc-surface: #ffffff;
-    --oc-surface-2: #f7f7fb;
-    --oc-border: rgba(15, 23, 42, 0.10);
-    --oc-text: #0f172a;
-    --oc-muted: rgba(15, 23, 42, 0.55);
-    --oc-accent: #f97316;
-    --oc-accent-2: #3b82f6;
-    --oc-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
   }
 }
 
@@ -156,36 +65,6 @@
   --hn-link: var(--oc-text);
   --hn-link-visited: rgba(15, 23, 42, 0.55);
   --hn-meta: var(--oc-muted);
-}
-
-:root[data-theme="light"][data-brand="ops"] {
-  --oc-text: #0b1220;
-  --oc-muted: rgba(11, 18, 32, 0.6);
-  --oc-accent: #0ea5e9;
-  --oc-accent-2: #84cc16;
-  --oc-shadow: 0 20px 50px rgba(11, 18, 32, 0.10);
-}
-
-:root[data-theme="light"][data-brand="punk"] {
-  --oc-bg: #fafafa;
-  --oc-surface-2: #f4f4ff;
-  --oc-border: rgba(17, 24, 39, 0.10);
-  --oc-text: #111827;
-  --oc-muted: rgba(17, 24, 39, 0.55);
-  --oc-accent: #a855f7;
-  --oc-accent-2: #06b6d4;
-  --oc-shadow: 0 20px 50px rgba(17, 24, 39, 0.10);
-}
-
-:root[data-theme="light"][data-brand="paper"] {
-  --oc-bg: #fbfbfd;
-  --oc-surface-2: #f7f7fb;
-  --oc-border: rgba(15, 23, 42, 0.10);
-  --oc-text: #0f172a;
-  --oc-muted: rgba(15, 23, 42, 0.55);
-  --oc-accent: #f97316;
-  --oc-accent-2: #3b82f6;
-  --oc-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
 
 * {
