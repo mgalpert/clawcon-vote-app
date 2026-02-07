@@ -431,7 +431,7 @@ export default function SubmissionBoard() {
                 autoFocus
               />
               <button
-                className="oc-button"
+                className="hn-button"
                 type="submit"
                 disabled={
                   loading ||
@@ -449,73 +449,131 @@ export default function SubmissionBoard() {
         </div>
       )}
 
-      <div className="oc-split">
-        <section className="oc-panel">
-          <div className="oc-panel-header">
-            <div className="oc-tabs">
-              <button
-                className={`oc-tab ${activeTab === "speaker_demo" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("speaker_demo");
-                  setDisplayCount(30);
-                }}
-              >
-                Demos
-              </button>
-              <button
-                className={`oc-tab ${activeTab === "topic" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveTab("topic");
-                  setDisplayCount(30);
-                }}
-              >
-                Topics
-              </button>
-            </div>
+      {/* Header with sidebar layout */}
+      <div className="hn-header">
+        <div className="hn-header-left">
+          <div className="hn-logo">
+            <span className="hn-logo-icon">🦞</span>
+            <span className="hn-logo-text">Claw Con</span>
+          </div>
 
-            <div className="oc-panel-actions">
-              <label className="oc-field-inline">
-                <span className="oc-field-label">Lang</span>
-                <select
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value)}
-                  className="oc-select"
-                  aria-label="Select language"
-                >
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                  <option value="fr">Français</option>
-                  <option value="de">Deutsch</option>
-                  <option value="ja">日本語</option>
-                </select>
-              </label>
+          <CitySelect path="/" activeCityKey={city.key} />
+          <MobileNav cityKey={city.key} activePath="/" />
 
-              {userEmail ? (
+          <nav className="hn-nav">
+            <button
+              className={`hn-nav-link ${activeTab === "speaker_demo" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("speaker_demo");
+                setDisplayCount(30);
+              }}
+            >
+              demos
+            </button>
+            <span className="hn-nav-sep">|</span>
+            <button
+              className={`hn-nav-link ${activeTab === "topic" ? "active" : ""}`}
+              onClick={() => {
+                setActiveTab("topic");
+                setDisplayCount(30);
+              }}
+            >
+              topics
+            </button>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/events", city.key)} className="hn-nav-link">
+              events
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/speakers", city.key)} className="hn-nav-link">
+              speakers
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/robots", city.key)} className="hn-nav-link">
+              robots
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/papers", city.key)} className="hn-nav-link">
+              papers
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/sponsors", city.key)} className="hn-nav-link">
+              sponsors
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/awards", city.key)} className="hn-nav-link">
+              awards
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/jobs", city.key)} className="hn-nav-link">
+              jobs
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/photos", city.key)} className="hn-nav-link">
+              photos
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/livestream", city.key)} className="hn-nav-link">
+              livestream
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href="/skills" className="hn-nav-link">
+              skills
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/memes", city.key)} className="hn-nav-link">
+              memes
+            </a>
+            <span className="hn-nav-sep">|</span>
+            <a href={withCity("/chats", city.key)} className="hn-nav-link">
+              join the chat
+            </a>
+          </nav>
+          <div className="hn-header-right">
+            <label
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              {/* language */}
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value)}
+                style={{ padding: "2px 6px" }}
+                aria-label="Select language"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">日本語</option>
+              </select>
+            </label>
+
+            {userEmail && (
+              <div className="hn-user">
                 <button
-                  className="oc-avatar"
+                  className="hn-profile-button"
                   onClick={handleSignOut}
                   title={`Sign out (${userEmail})`}
                   aria-label="Sign out"
                 >
-                  {userEmail.trim().charAt(0).toUpperCase()}
+                  <span className="hn-profile" aria-hidden="true">
+                    {userEmail.trim().charAt(0).toUpperCase()}
+                  </span>
                 </button>
-              ) : (
-                <button
-                  className="oc-button ghost"
-                  onClick={() => setShowSignInModal(true)}
-                >
-                  Sign in
-                </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
+        </div>
+      </div>
 
-          {notice && <div className="oc-notice">{notice}</div>}
+      {notice && <div className="hn-notice">{notice}</div>}
 
-          <div className="oc-board">
-            <div className="oc-board-main">
-              <div className="oc-table-wrap">
-                <table className="hn-table">
+      {/* city selector moved to header */}
+
+      <div className="hn-layout">
+        {/* Main content - submissions list */}
+        <main className="hn-main">
+          <table className="hn-table">
             <tbody>
               {visibleSubmissions.length === 0 ? (
                 <tr>
@@ -622,11 +680,10 @@ export default function SubmissionBoard() {
               — {filteredSubmissions.length} submissions —
             </div>
           )}
-              </div>
-            </div>
+        </main>
 
-            {/* Sidebar - submit form */}
-            <aside className="oc-board-side">
+        {/* Sidebar - submit form */}
+        <aside className="hn-sidebar">
           <div className="hn-sidebar-box">
             <h3>Submit a {activeTab === "speaker_demo" ? "Demo" : "Topic"}</h3>
             {session ? (
@@ -911,9 +968,25 @@ POST https://clawdcon.com/api/webhook
           </details>
         </aside>
       </div>
-    </section>
-  </div>
 
+      <footer className="hn-footer">
+        <a href="https://github.com/clawcon" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+        {" | "}
+        <span>
+          Forked from{" "}
+          <a href="https://x.com/msg" target="_blank" rel="noreferrer">
+            @msg
+          </a>{" "}
+          by{" "}
+          <a href="https://x.com/dablclub" target="_blank" rel="noreferrer">
+            @colygon
+          </a>
+        </span>
+        {" | "}
+        <span>Orchestrated by Clawd</span>
+      </footer>
     </>
   );
 }

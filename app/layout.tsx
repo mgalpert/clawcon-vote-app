@@ -1,10 +1,8 @@
 import "./globals.css";
-import { Suspense } from "react";
-import AppShell from "./_shared/app-shell";
 
 export const metadata = {
-  title: "ClawdCon – Submit & Vote",
-  description: "Submit and vote on demos and topics for ClawdCon.",
+  title: "Claw Con – Submit & Vote",
+  description: "Submit and vote on demos and topics for Claw Con.",
 };
 
 export default function RootLayout({
@@ -14,11 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Suspense fallback={null}>
-          <AppShell>{children}</AppShell>
-        </Suspense>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
