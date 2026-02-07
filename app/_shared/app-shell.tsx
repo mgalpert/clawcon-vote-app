@@ -9,6 +9,8 @@ import { NAV_ITEMS } from "./nav";
 
 type ThemeMode = "system" | "light" | "dark";
 
+type BrandMode = "openclaw" | "ops" | "punk" | "paper";
+
 export default function AppShell(props: {
   children: React.ReactNode;
   title?: string;
@@ -29,6 +31,17 @@ export default function AppShell(props: {
     }
   });
 
+  const [brandMode, setBrandMode] = useState<BrandMode>(() => {
+    try {
+      return (
+        (window.localStorage.getItem("clawdcon.brand") as BrandMode) ||
+        "openclaw"
+      );
+    } catch {
+      return "openclaw";
+    }
+  });
+
   useEffect(() => {
     try {
       window.localStorage.setItem("clawdcon.theme", themeMode);
@@ -42,6 +55,14 @@ export default function AppShell(props: {
       document.documentElement.setAttribute("data-theme", themeMode);
     }
   }, [themeMode]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("clawdcon.brand", brandMode);
+    } catch {}
+
+    document.documentElement.setAttribute("data-brand", brandMode);
+  }, [brandMode]);
 
   const items = useMemo(() => {
     return NAV_ITEMS.map((i) => ({
@@ -90,6 +111,21 @@ export default function AppShell(props: {
         </nav>
 
         <div className="oc-sidebar-bottom">
+          <div className="oc-brand-switch" aria-label="Brand direction">
+            <div className="oc-hint-title">Brand</div>
+            <select
+              className="oc-select"
+              value={brandMode}
+              onChange={(e) => setBrandMode(e.target.value as BrandMode)}
+              aria-label="Select brand direction"
+            >
+              <option value="openclaw">OpenClaw</option>
+              <option value="ops">Conference Ops</option>
+              <option value="punk">Clawd Punk</option>
+              <option value="paper">Paper / UI Lab</option>
+            </select>
+          </div>
+
           <div className="oc-theme" aria-label="Theme mode">
             <button
               type="button"

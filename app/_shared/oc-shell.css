@@ -111,6 +111,11 @@
   gap: 10px;
 }
 
+.oc-brand-switch {
+  display: grid;
+  gap: 6px;
+}
+
 .oc-theme {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
