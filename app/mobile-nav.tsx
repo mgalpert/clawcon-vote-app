@@ -7,6 +7,7 @@ type NavItem = {
   label: string;
   href: string;
   cityScoped?: boolean;
+  external?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -23,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "livestream", href: "/livestream", cityScoped: true },
   { label: "skills", href: "/skills", cityScoped: false },
   { label: "memes", href: "/memes", cityScoped: true },
+  { label: "merch", href: "https://clawcon.myshopify.com/", cityScoped: false, external: true },
   { label: "join the chat", href: "/chats", cityScoped: true },
   { label: "logs", href: "/logs", cityScoped: true },
 ];
@@ -34,7 +36,7 @@ export default function MobileNav(props: {
   const items = useMemo(() => {
     return NAV_ITEMS.map((i) => ({
       ...i,
-      url: i.cityScoped ? withCity(i.href, props.cityKey as any) : i.href,
+      url: i.external ? i.href : (i.cityScoped ? withCity(i.href, props.cityKey as any) : i.href),
     }));
   }, [props.cityKey]);
 
@@ -46,16 +48,17 @@ export default function MobileNav(props: {
       <div className="hn-mobile-nav-panel" role="menu">
         {items.map((i) => {
           const isActive =
-            i.href === props.activePath ||
-            (i.href !== "/" && props.activePath.startsWith(i.href));
+            !i.external && (i.href === props.activePath ||
+            (i.href !== "/" && props.activePath.startsWith(i.href)));
           return (
             <a
               key={i.label}
               href={i.url}
               className={`hn-linktree ${isActive ? "active" : ""}`}
               role="menuitem"
+              {...(i.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
-              {i.label}
+              {i.label}{i.external ? " ↗" : ""}
             </a>
           );
         })}
