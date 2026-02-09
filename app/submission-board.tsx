@@ -247,12 +247,9 @@ export default function SubmissionBoard() {
               demos
             </button>
             <span className="hn-nav-sep">|</span>
-            <button
-              className={`hn-nav-link ${activeTab === "topic" ? "active" : ""}`}
-              onClick={() => { setActiveTab("topic"); setDisplayCount(30); }}
-            >
-              topics
-            </button>
+            <a href="/merch" className="hn-nav-link">
+              merch
+            </a>
             <span className="hn-nav-sep">|</span>
             <a href="https://lu.ma/moltbot-sf-show-tell" target="_blank" rel="noreferrer" className="hn-nav-link">
               event page
