@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/merch",
+      "destination": "https://clawcon.myshopify.com",
+      "permanent": false
+    }
+  ]
+}
